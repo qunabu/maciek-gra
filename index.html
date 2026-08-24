@@ -767,6 +767,7 @@ function bossOberwal(dmg) {
     A.sfx('sfx_bum', .8);
     A.vo('k_smierc', 4);
     setTimeout(() => A.vo('m_wygrana', 4), 2200);
+    setTimeout(() => A.vo('u_bonus', 2), 5200);
     const premia = 900 + b.poziom * 600;
     dodajPunkty(premia);
     komunikat('CIOCIA KASIA POKONANA', '+' + premia + ' · odzyskujesz życie', 3200);
@@ -1033,7 +1034,7 @@ function rysujGracza() {
   }
   /* kapelusz kowbojski — kosmiczne country */
   ctx.save();
-  ctx.translate(0, -g.r * 1.32);
+  ctx.translate(0, -g.r * 1.24);
   ctx.fillStyle = '#6b3f22';
   ctx.beginPath(); ctx.ellipse(0, 2, g.r * .95, g.r * .21, 0, 0, TAU); ctx.fill();
   ctx.beginPath();
@@ -1407,14 +1408,14 @@ function koniecGry() {
   setTimeout(() => A.vo('m_koniec', 5), 3600);
   $('#hud').classList.add('ukryty');
   $('#bossPasek').classList.add('ukryty');
-  const celnosc = G.strzaly ? Math.round(G.trafienia / G.strzaly * 100) : 0;
+  const celnosc = G.strzaly ? Math.round(G.trafienia / G.strzaly * 100) + '%' : '—';
   const rekord = Math.max(G.punkty, +(localStorage.getItem('maciek_rekord') || 0));
   localStorage.setItem('maciek_rekord', rekord);
   $('#koniecTabela').innerHTML =
     'przychód: <b>' + G.punkty + '</b><br>' +
     'rekord poradni: <b>' + rekord + '</b><br>' +
     'dotarłeś do fali: <b>' + G.fala + '</b><br>' +
-    'celność Kutasa 3000: <b>' + celnosc + '%</b><br>' +
+    'celność Kutasa 3000: <b>' + celnosc + '</b><br>' +
     (G.karaFale > 0 ? '<span class="c">zszedłeś z kontrolą na karku</span>'
                     : '<span class="z">wskaźnik na koniec: w normie</span>');
   $('#ekranKoniec').classList.remove('ukryty');
