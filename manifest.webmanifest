@@ -1,0 +1,21 @@
+{
+  "name": "Maciek kontra NFZ",
+  "short_name": "Maciek vs NFZ",
+  "description": "Asteroids w klimacie kosmicznego country. Rozwalasz rozporządzenia, drukarki, monitory i roszczeniowych pacjentów, łapiesz pierwszorazowych i uciekasz przed kontrolą. Mega bos: ciocia Kasia.",
+  "lang": "pl",
+  "dir": "ltr",
+  "id": "maciek-kontra-nfz",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#05060f",
+  "theme_color": "#ff3ea5",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "ikona-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "ikona-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "ikona-maskowalna-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

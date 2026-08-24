@@ -1,0 +1,15 @@
+# klucz do ElevenLabs — nigdy do repo
+.env
+
+# skompilowane narzędzia
+tools/cutout
+tools/gen_ikony
+*.dSYM/
+
+# źródłowe zdjęcia (ciężkie, do repo idzie tylko wycięty maciek_ship.png)
+maciek.jpg
+maciek_head.png
+Bociuś*.jpg
+*.zip
+
+.DS_Store

@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>MACIEK KONTRA NFZ</title>
+<meta name="description" content="Asteroids w klimacie kosmicznego country. Maciek kontra rozporządzenia NFZ, drukarki, monitory i ciocia Kasia.">
+<meta name="theme-color" content="#ff3ea5">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon-64.png" sizes="64x64" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Maciek vs NFZ">
+<style>
+  :root{
+    --tlo:#05060f; --neon:#ff3ea5; --zielony:#43ffa1; --zolty:#ffd23f;
+    --blekit:#5ad7ff; --czerw:#ff4d4d; --mgla:rgba(255,255,255,.6);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:var(--tlo);overflow:hidden;
+    font-family:"Courier New",ui-monospace,monospace;color:#fff;
+    -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  #plansza{display:block;width:100vw;height:100vh;touch-action:none}
+
+  .warstwa{position:fixed;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;padding:24px;
+    background:radial-gradient(ellipse at 50% 40%,rgba(20,8,40,.86),rgba(3,3,10,.96));
+    backdrop-filter:blur(3px);z-index:10}
+  .ukryty{display:none!important}
+
+  h1{font-size:clamp(28px,7vw,68px);letter-spacing:.06em;line-height:1.05;
+    color:var(--neon);text-shadow:0 0 18px rgba(255,62,165,.75),0 0 44px rgba(255,62,165,.35);
+    margin-bottom:6px}
+  h1 small{display:block;font-size:.42em;color:var(--blekit);letter-spacing:.22em;
+    text-shadow:0 0 12px rgba(90,215,255,.6);margin-top:10px}
+  .podtytul{color:var(--mgla);max-width:640px;font-size:clamp(12px,2.6vw,16px);
+    line-height:1.65;margin:18px 0}
+  .podtytul b{color:var(--zolty)}
+  .klawisze{display:grid;grid-template-columns:auto auto;gap:6px 18px;
+    font-size:clamp(11px,2.4vw,14px);color:var(--mgla);margin:8px 0 22px}
+  .klawisze i{color:var(--zielony);font-style:normal}
+
+  button.gra{font-family:inherit;font-weight:bold;font-size:clamp(15px,3.4vw,20px);
+    letter-spacing:.12em;padding:16px 34px;border:2px solid var(--neon);border-radius:4px;
+    background:rgba(255,62,165,.12);color:#fff;cursor:pointer;
+    box-shadow:0 0 22px rgba(255,62,165,.35),inset 0 0 22px rgba(255,62,165,.12);
+    transition:transform .1s,background .15s}
+  button.gra:hover{background:rgba(255,62,165,.28)}
+  button.gra:active{transform:scale(.96)}
+
+  #hud{position:fixed;inset:0;pointer-events:none;z-index:5;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 0;
+    display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+    font-size:clamp(11px,2.3vw,15px);text-shadow:0 2px 8px #000}
+  #hud .kol{display:flex;flex-direction:column;gap:5px}
+  #hud .p{color:var(--zolty);letter-spacing:.08em}
+  #zycia{letter-spacing:2px}
+  #wskaznik{min-width:min(240px,42vw)}
+  #wskaznik .etyk{display:flex;justify-content:space-between;gap:10px;
+    font-size:.86em;color:var(--mgla);margin-bottom:3px}
+  #pasek{height:9px;border:1px solid rgba(255,255,255,.32);border-radius:2px;overflow:hidden;
+    background:rgba(0,0,0,.45);position:relative}
+  #pasekWyp{height:100%;width:0%;background:var(--zielony);
+    box-shadow:0 0 10px currentColor;transition:width .25s,background .25s}
+  #prog{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--zolty);
+    box-shadow:0 0 8px var(--zolty)}
+  #kara{color:var(--czerw);font-weight:bold;animation:puls 1s infinite}
+  @keyframes puls{50%{opacity:.35}}
+
+  #bossPasek{position:fixed;left:50%;transform:translateX(-50%);
+    top:calc(64px + env(safe-area-inset-top));width:min(560px,84vw);z-index:6;
+    pointer-events:none;text-align:center}
+  #bossPasek .nazwa{font-size:clamp(11px,2.4vw,14px);letter-spacing:.2em;
+    color:var(--neon);margin-bottom:4px;text-shadow:0 0 12px rgba(255,62,165,.7)}
+  #bossRama{height:13px;border:2px solid var(--neon);border-radius:3px;
+    background:rgba(0,0,0,.6);overflow:hidden}
+  #bossWyp{height:100%;width:100%;background:linear-gradient(90deg,#ff3ea5,#ff8a3e);
+    transition:width .2s}
+
+  #komunikat{position:fixed;left:0;right:0;top:38%;text-align:center;z-index:7;
+    pointer-events:none;font-size:clamp(18px,5vw,40px);font-weight:bold;
+    letter-spacing:.08em;opacity:0;transition:opacity .3s}
+  #komunikat span{display:block;font-size:.44em;font-weight:normal;letter-spacing:.14em;
+    color:var(--mgla);margin-top:10px}
+
+  #dymek{position:fixed;left:50%;transform:translateX(-50%);
+    bottom:calc(96px + env(safe-area-inset-bottom));z-index:7;pointer-events:none;
+    max-width:min(560px,88vw);padding:9px 16px;border-radius:14px;
+    background:rgba(10,8,24,.82);border:1px solid rgba(255,255,255,.16);
+    font-size:clamp(12px,2.6vw,16px);opacity:0;transition:opacity .25s}
+  #dymek b{color:var(--blekit)}
+
+  #dotyk{position:fixed;inset:auto 0 0 0;z-index:8;display:none;
+    padding:0 12px calc(12px + env(safe-area-inset-bottom));
+    justify-content:space-between;align-items:flex-end;pointer-events:none}
+  #dotyk .grupa{display:flex;gap:10px;pointer-events:auto}
+  #dotyk b{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;
+    border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.09);
+    font-size:22px;color:#fff;backdrop-filter:blur(6px)}
+  #dotyk b.ogien{border-color:var(--neon);background:rgba(255,62,165,.22);width:74px;height:74px}
+  body.dotyk #dotyk{display:flex}
+
+  .stopka{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom));left:0;right:0;
+    text-align:center;font-size:11px;color:rgba(255,255,255,.28);letter-spacing:.1em;z-index:11}
+  .tabela{font-size:clamp(11px,2.4vw,14px);color:var(--mgla);line-height:1.9;margin:6px 0 18px}
+  .tabela b{color:#fff}
+  .tabela .z{color:var(--zielony)}
+  .tabela .c{color:var(--czerw)}
+
+  /* --- PWA: instalacja i aktualizacja --- */
+  button.gra.drugi{border-color:var(--blekit);background:rgba(90,215,255,.12);
+    box-shadow:0 0 18px rgba(90,215,255,.28),inset 0 0 18px rgba(90,215,255,.1);
+    font-size:clamp(12px,2.8vw,15px);padding:12px 24px;letter-spacing:.1em}
+  button.gra.drugi:hover{background:rgba(90,215,255,.26)}
+  .rzad{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center;margin-top:16px}
+
+  #nowaWersja{position:fixed;left:50%;transform:translateX(-50%);
+    top:calc(12px + env(safe-area-inset-top));z-index:30;
+    display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center;
+    padding:11px 16px;border-radius:8px;max-width:92vw;
+    background:rgba(12,10,26,.95);border:1px solid var(--neon);
+    box-shadow:0 0 26px rgba(255,62,165,.4);
+    font-size:clamp(11px,2.5vw,14px)}
+  #nowaWersja b{color:var(--neon)}
+  #nowaWersja button{font-family:inherit;font-size:inherit;font-weight:bold;cursor:pointer;
+    padding:7px 14px;border-radius:4px;border:1px solid var(--neon);
+    background:rgba(255,62,165,.22);color:#fff;letter-spacing:.06em}
+  #nowaWersja button.cicho{border-color:rgba(255,255,255,.28);background:transparent;
+    color:var(--mgla);font-weight:normal}
+  #wersjaTxt{font-size:10px;color:rgba(255,255,255,.24);letter-spacing:.12em;margin-top:8px}
+  #stanOffline{font-size:10px;color:var(--zielony);opacity:.6;letter-spacing:.1em}
+</style>
+</head>
+<body>
+<canvas id="plansza"></canvas>
+
+<div id="hud" class="ukryty">
+  <div class="kol">
+    <div class="p" id="punkty">0</div>
+    <div id="zycia">❤︎❤︎❤︎</div>
+    <div id="kara" class="ukryty">KARA NFZ −25% · <span id="karaFale">3</span> fale</div>
+  </div>
+  <div class="kol" style="align-items:flex-end">
+    <div class="p" id="fala">FALA 1</div>
+    <div id="wskaznik">
+      <div class="etyk"><span>pierwszorazowi</span><span id="ratioTxt">0%</span></div>
+      <div id="pasek"><div id="pasekWyp"></div><div id="prog"></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="bossPasek" class="ukryty">
+  <div class="nazwa">★ MEGA BOS · CIOCIA KASIA ★</div>
+  <div id="bossRama"><div id="bossWyp"></div></div>
+</div>
+
+<div id="komunikat"></div>
+<div id="dymek"></div>
+
+<div id="dotyk">
+  <div class="grupa"><b id="bLewo">◀</b><b id="bPrawo">▶</b></div>
+  <div class="grupa"><b id="bHiper">⇢</b><b id="bCiag">▲</b><b id="bOgien" class="ogien">●</b></div>
+</div>
+
+<div class="warstwa" id="ekranMenu">
+  <h1>MACIEK<br>KONTRA NFZ<small>kosmiczne country · edycja poradniana</small></h1>
+  <p class="podtytul">
+    Sam na orbicie. Wokół <b>rozporządzenia</b>, <b>zepsute drukarki</b>, <b>martwe monitory</b>,
+    <b>roszczeniowe pacjentki</b> i <b>debile z ulicy</b>. Rozwalasz to wszystko
+    <b>Kutasem&nbsp;3000</b>.<br><br>
+    Ale uwaga: musisz jeszcze <b class="z">łapać zielonych pacjentów pierwszorazowych</b>.
+    Żółci (kontynuacja) przylatują sami i psują ci wskaźnik.
+    Spadnie poniżej progu na koniec fali → <b class="c">kontrola i −25% na trzy fale</b>.
+    Nie twoja wina. Nikogo to nie obchodzi.<br><br>
+    Co piątą falę schodzi <b>MEGA BOS: CIOCIA KASIA</b>.
+  </p>
+  <div class="klawisze">
+    <i>← →</i><span>obrót</span>
+    <i>↑</i><span>ciąg</span>
+    <i>SPACJA</i><span>ognia z Kutasa 3000</span>
+    <i>SHIFT</i><span>hiperprzestrzeń (ucieczka)</span>
+    <i>M</i><span>dźwięk on/off</span>
+    <i>P</i><span>pauza</span>
+  </div>
+  <div class="rzad">
+    <button class="gra" id="bStart">START</button>
+    <button class="gra drugi ukryty" id="bInstaluj">⤓ ZAINSTALUJ</button>
+    <button class="gra drugi" id="bSprawdz">↻ SPRAWDŹ WERSJĘ</button>
+  </div>
+  <div id="wersjaTxt">wersja <span id="wNumer">—</span> · <span id="stanOffline"></span></div>
+  <div class="stopka">strzałkami się gra, spacją się leczy</div>
+</div>
+
+<div id="nowaWersja" class="ukryty">
+  <span><b>NOWA WERSJA</b> gry jest gotowa.</span>
+  <button id="bOdswiez">ODŚWIEŻ</button>
+  <button id="bPozniej" class="cicho">później</button>
+</div>
+
+<div class="warstwa ukryty" id="ekranKoniec">
+  <h1 id="koniecTytul">UMOWA<br>ROZWIĄZANA</h1>
+  <div class="tabela" id="koniecTabela"></div>
+  <button class="gra" id="bZnowu">JESZCZE RAZ</button>
+  <div class="stopka">i tak cię dojadą</div>
+</div>
+
+<div class="warstwa ukryty" id="ekranPauza">
+  <h1>PAUZA<small>idź zrobić kawę</small></h1>
+  <button class="gra" id="bWroc">WRACAM</button>
+</div>
+
+<script>
+'use strict';
+/* ═══════════════════════════════════════════════════════════════════
+   MACIEK KONTRA NFZ — asteroids w klimacie kosmicznego country
+   ═══════════════════════════════════════════════════════════════════ */
+
+const $ = s => document.querySelector(s);
+const plansza = $('#plansza'), ctx = plansza.getContext('2d');
+const TAU = Math.PI * 2;
+const los = (a, b) => a + Math.random() * (b - a);
+const losInt = (a, b) => Math.floor(los(a, b + 1));
+const wybierz = t => t[losInt(0, t.length - 1)];
+const ogranicz = (v, a, b) => v < a ? a : v > b ? b : v;
+
+let S = 1, W = 0, H = 0;                     // skala DPR i wymiary logiczne
+function przeskaluj() {
+  S = Math.min(devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  plansza.width = W * S; plansza.height = H * S;
+  plansza.style.width = W + 'px'; plansza.style.height = H + 'px';
+  ctx.setTransform(S, 0, 0, S, 0, 0);
+}
+addEventListener('resize', przeskaluj);
+przeskaluj();
+
+/* ─────────────────────────  DŹWIĘK  ───────────────────────── */
+const A = (() => {
+  const SFX = ['sfx_strzal','sfx_bum','sfx_drukarka','sfx_monitor','sfx_paragraf',
+               'sfx_pacjent','sfx_kara','sfx_boss','sfx_hit','sfx_smierc','sfx_hiper'];
+  const GLOS = ['m_start','m_strzal1','m_strzal2','m_strzal3','m_drukarka','m_monitor',
+                'm_paragraf','m_babcia','m_debil','m_pacjent','m_smierc','m_koniec','m_boss',
+                'm_zycie','m_kara','m_wygrana','m_low',
+                'u_fala','u_ostrzez','u_kara','u_kontrola','u_boss','u_koniec','u_ratio_ok','u_bonus',
+                'k_wejscie','k_atak1','k_atak2','k_atak3','k_atak4','k_trafiona','k_smierc','k_wygrana'];
+  const MUZ = ['muz_menu','muz_gra','muz_boss','muz_koniec','muz_wygrana'];
+
+  const pule = {}, glosy = {}, muzyki = {};
+  let wlaczony = true, teraz = null, mowi = null, mowiDo = 0;
+
+  function zrob(nazwa, ile, gl) {
+    const t = [];
+    for (let i = 0; i < ile; i++) {
+      const a = new Audio('audio/' + nazwa + '.mp3');
+      a.preload = 'auto'; a.volume = gl;
+      t.push(a);
+    }
+    return { t, i: 0 };
+  }
+  SFX.forEach(n => pule[n] = zrob(n, 4, .5));
+  GLOS.forEach(n => glosy[n] = zrob(n, 1, .95));
+  MUZ.forEach(n => {
+    const a = new Audio('audio/' + n + '.mp3');
+    a.loop = n !== 'muz_koniec' && n !== 'muz_wygrana';
+    a.volume = 0; a.preload = 'auto';
+    muzyki[n] = a;
+  });
+
+  function sfx(n, gl) {
+    if (!wlaczony || !pule[n]) return;
+    const p = pule[n], a = p.t[p.i];
+    p.i = (p.i + 1) % p.t.length;
+    try { a.currentTime = 0; a.volume = gl === undefined ? .5 : gl; a.play().catch(() => {}); } catch (e) {}
+  }
+  /* kwestie mówione — jedna naraz, priorytet wygrywa */
+  function vo(n, prio) {
+    if (!wlaczony || !glosy[n]) return;
+    prio = prio || 1;
+    const t = performance.now();
+    if (mowi && t < mowiDo && prio <= mowi.prio) return;
+    if (mowi && mowi.a) { try { mowi.a.pause(); } catch (e) {} }
+    const a = glosy[n].t[0];
+    try {
+      a.currentTime = 0; a.play().catch(() => {});
+      const d = (a.duration && isFinite(a.duration) ? a.duration : 2) * 1000;
+      mowi = { a, prio }; mowiDo = t + d;
+      pochyl(.28);
+    } catch (e) {}
+  }
+  /* przygaszenie muzyki na czas kwestii */
+  let cel = .34, chwilowo = 1;
+  function pochyl(v) { chwilowo = v; }
+  function muz(n) {
+    if (teraz === n) return;
+    if (teraz && muzyki[teraz]) { const s = muzyki[teraz]; s.pause(); s.currentTime = 0; s.volume = 0; }
+    teraz = n;
+    if (!n || !wlaczony) return;
+    const a = muzyki[n];
+    if (!a) return;
+    try { a.currentTime = 0; a.play().catch(() => {}); } catch (e) {}
+  }
+  setInterval(() => {
+    const t = performance.now();
+    if (mowi && t > mowiDo) { mowi = null; }
+    const docel = mowi ? .10 : cel;
+    chwilowo += (docel - chwilowo) * .18;
+    if (teraz && muzyki[teraz]) muzyki[teraz].volume = wlaczony ? ogranicz(chwilowo, 0, 1) : 0;
+  }, 60);
+
+  return {
+    sfx, vo, muz,
+    get on() { return wlaczony; },
+    przelacz() {
+      wlaczony = !wlaczony;
+      if (!wlaczony) { Object.values(muzyki).forEach(a => a.pause()); }
+      else if (teraz) { try { muzyki[teraz].play().catch(() => {}); } catch (e) {} }
+      return wlaczony;
+    },
+    odblokuj() {  /* wymuszenie autoplay po pierwszym kliknięciu */
+      Object.values(muzyki).forEach(a => { a.play().then(() => a.pause()).catch(() => {}); });
+    }
+  };
+})();
+
+/* ─────────────────────────  SPRITE MAĆKA  ───────────────────────── */
+const maciekImg = new Image();
+let maciekOK = false;
+maciekImg.onload = () => maciekOK = true;
+maciekImg.src = 'maciek_ship.png';
+
+/* ─────────────────────────  GWIAZDY + HORYZONT  ───────────────────────── */
+let gwiazdy = [];
+function gwiazdyGen() {
+  gwiazdy = [];
+  const n = Math.round((W * H) / 5200);
+  for (let i = 0; i < n; i++) {
+    gwiazdy.push({ x: Math.random(), y: Math.random(), r: los(.4, 1.5),
+                   j: los(.15, .9), m: los(.2, 1) });
+  }
+}
+gwiazdyGen();
+addEventListener('resize', gwiazdyGen);
+
+/* ─────────────────────────  TYPY WROGÓW  ───────────────────────── */
+const TYPY = {
+  paragraf: { nazwa: 'ROZPORZĄDZENIE', kolor: '#cfd6ff', pkt: 20, sfx: 'sfx_paragraf',
+              vo: 'm_paragraf', waga: 3.2, predkosc: 1.0 },
+  drukarka: { nazwa: 'DRUKARKA',       kolor: '#9fb3c8', pkt: 25, sfx: 'sfx_drukarka',
+              vo: 'm_drukarka', waga: 2.4, predkosc: .85 },
+  monitor:  { nazwa: 'MONITOR',        kolor: '#7fe3ff', pkt: 25, sfx: 'sfx_monitor',
+              vo: 'm_monitor',  waga: 2.4, predkosc: .9 },
+  babcia:   { nazwa: 'ROSZCZENIOWA',   kolor: '#ffb3d1', pkt: 40, sfx: 'sfx_bum',
+              vo: 'm_babcia',   waga: 2.0, predkosc: 1.25 },
+  debil:    { nazwa: 'DEBIL Z ULICY',  kolor: '#ffd23f', pkt: 35, sfx: 'sfx_bum',
+              vo: 'm_debil',    waga: 1.8, predkosc: 1.35 },
+  kontrola: { nazwa: 'KONTROLA NFZ',   kolor: '#ff4d4d', pkt: 70, sfx: 'sfx_kara',
+              vo: 'u_kontrola', waga: 1.0, predkosc: 1.6 }
+};
+const KLUCZE_TYPOW = Object.keys(TYPY);
+function losujTyp(fala) {
+  const pula = [];
+  for (const k of KLUCZE_TYPOW) {
+    if (k === 'kontrola' && fala < 3) continue;
+    let w = TYPY[k].waga;
+    if (k === 'kontrola') w = .6 + fala * .12;
+    for (let i = 0; i < Math.round(w * 10); i++) pula.push(k);
+  }
+  return wybierz(pula);
+}
+
+/* ─────────────────────────  STAN GRY  ───────────────────────── */
+const PROG = .34;                       // wymagany wskaźnik pierwszorazowych
+let G = null;
+
+function nowaGra() {
+  G = {
+    stan: 'gra',
+    punkty: 0, zycia: 3, fala: 0,
+    pierwszorazowi: 0, kontynuacje: 0,
+    karaFale: 0,
+    czas: 0, ostatniaKlatka: performance.now(),
+    gracz: null,
+    skaly: [], pociski: [], wrogPociski: [], pacjenci: [], czastki: [], teksty: [],
+    boss: null,
+    przerwa: 0,            // odliczanie do kolejnej fali
+    nietykalnosc: 0,
+    trzask: 0,             // trzęsienie ekranu
+    spawnKontynuacji: 0,
+    zabiciWFali: 0, strzaly: 0, trafienia: 0,
+    najwiekszeComboPkt: 0, combo: 0, comboDo: 0
+  };
+  G.gracz = nowyGracz();
+  ustawHUD();
+}
+
+function nowyGracz() {
+  return { x: W / 2, y: H / 2, vx: 0, vy: 0, kat: -Math.PI / 2, r: 25,
+           ciag: false, cooldown: 0, hiperCooldown: 0, zywy: true };
+}
+
+/* ─────────────────────────  ENCJE  ───────────────────────── */
+/* pozycja startowa: gdziekolwiek na planszy, byle nie na głowie gracza */
+let _bx = 0, _by = 0;
+function bezpieczneMiejsce() {
+  const g = G && G.gracz ? G.gracz : { x: W / 2, y: H / 2 };
+  for (let i = 0; i < 40; i++) {
+    _bx = los(30, W - 30); _by = los(30, H - 30);
+    if (Math.hypot(_bx - g.x, _by - g.y) > Math.min(260, Math.min(W, H) * .42)) return;
+  }
+}
+function bezpiecznyX() { bezpieczneMiejsce(); return _bx; }
+function bezpiecznyY() { return _by; }
+
+function nowaSkala(typ, rozmiar, x, y, fala) {
+  const t = TYPY[typ];
+  const baza = .55 + fala * .045;
+  const predkosc = los(.35, .95) * baza * t.predkosc * (4 - rozmiar) * .55 + .25;
+  const kat = los(0, TAU);
+  const r = rozmiar === 3 ? 46 : rozmiar === 2 ? 29 : 17;
+  return {
+    typ, rozmiar, r,
+    x: x !== undefined ? x : bezpiecznyX(),
+    y: y !== undefined ? y : bezpiecznyY(),
+    vx: Math.cos(kat) * predkosc * 60,
+    vy: Math.sin(kat) * predkosc * 60,
+    obrot: los(0, TAU), obrotV: los(-1.4, 1.4),
+    hp: rozmiar === 3 ? 2 : 1,
+    blysk: 0,
+    ziarno: los(0, 100)
+  };
+}
+
+function nowyPacjent(rodzaj) {
+  const kat = los(0, TAU);
+  const brzeg = Math.random();
+  let x, y;
+  if (brzeg < .25) { x = los(0, W); y = -30; }
+  else if (brzeg < .5) { x = los(0, W); y = H + 30; }
+  else if (brzeg < .75) { x = -30; y = los(0, H); }
+  else { x = W + 30; y = los(0, H); }
+  const doSrodka = Math.atan2(H / 2 - y, W / 2 - x) + los(-.7, .7);
+  return {
+    rodzaj, x, y, r: 15,
+    vx: Math.cos(doSrodka) * los(22, 52),
+    vy: Math.sin(doSrodka) * los(22, 52),
+    zycie: rodzaj === 'pierwszy' ? 13 : 9,   // sekundy zanim odleci
+    faza: los(0, TAU)
+  };
+}
+
+function czastki(x, y, ile, kolor, sila) {
+  for (let i = 0; i < ile; i++) {
+    const k = los(0, TAU), v = los(.25, 1) * (sila || 170);
+    G.czastki.push({ x, y, vx: Math.cos(k) * v, vy: Math.sin(k) * v,
+                     zycie: los(.3, .85), max: .85, kolor, r: los(1, 3.4) });
+  }
+}
+
+function tekstLatajacy(x, y, txt, kolor) {
+  G.teksty.push({ x, y, txt, kolor: kolor || '#fff', zycie: 1.1, max: 1.1 });
+}
+
+/* ─────────────────────────  FALE  ───────────────────────── */
+function startFali() {
+  G.fala++;
+  G.zabiciWFali = 0;
+  const bossowa = G.fala % 5 === 0;
+  G.skaly.length = 0; G.wrogPociski.length = 0;
+  G.pociski.length = 0;
+
+  if (bossowa) {
+    G.boss = nowyBoss(G.fala);
+    A.muz('muz_boss');
+    A.sfx('sfx_boss', .7);
+    A.vo('u_boss', 3);
+    setTimeout(() => A.vo('m_boss', 3), 1600);
+    setTimeout(() => A.vo('k_wejscie', 3), 3400);
+    komunikat('MEGA BOS', 'CIOCIA KASIA · fala ' + G.fala);
+    $('#bossPasek').classList.remove('ukryty');
+    /* kilka przeszkód do kompletu */
+    for (let i = 0; i < 3; i++) G.skaly.push(nowaSkala(losujTyp(G.fala), 2, undefined, undefined, G.fala));
+  } else {
+    G.boss = null;
+    $('#bossPasek').classList.add('ukryty');
+    A.muz('muz_gra');
+    const ile = Math.min(4 + Math.floor(G.fala * 1.25), 13);
+    for (let i = 0; i < ile; i++) {
+      G.skaly.push(nowaSkala(losujTyp(G.fala), 3, undefined, undefined, G.fala));
+    }
+    komunikat('FALA ' + G.fala, G.karaFale > 0
+      ? 'kara NFZ aktywna · zostały ' + G.karaFale
+      : 'wskaźnik pierwszorazowych min. ' + Math.round(PROG * 100) + '%');
+    A.vo('u_fala', 2);
+  }
+  /* pacjenci na dzień dobry */
+  for (let i = 0; i < 2; i++) G.pacjenci.push(nowyPacjent('pierwszy'));
+  G.spawnKontynuacji = 3.5;
+  ustawHUD();
+}
+
+function nowyBoss(fala) {
+  const poziom = Math.floor(fala / 5);
+  const hp = 26 + poziom * 16;
+  return {
+    x: W / 2, y: H * .26, vx: los(40, 70) * (Math.random() < .5 ? -1 : 1), vy: 24,
+    r: Math.min(88, 66 + poziom * 5),
+    hp, maxHp: hp, poziom,
+    faza: 0, atakCd: 2.2, ruchFaza: los(0, TAU),
+    blysk: 0, wsciek: 0, gadaCd: 5
+  };
+}
+
+/* ─────────────────────────  KOMUNIKATY  ───────────────────────── */
+let komTimer = null;
+function komunikat(duzy, maly, ms) {
+  const el = $('#komunikat');
+  el.innerHTML = duzy + (maly ? '<span>' + maly + '</span>' : '');
+  el.style.opacity = '1';
+  clearTimeout(komTimer);
+  komTimer = setTimeout(() => el.style.opacity = '0', ms || 2000);
+}
+let dymTimer = null;
+function dymek(kto, txt, ms) {
+  const el = $('#dymek');
+  el.innerHTML = '<b>' + kto + ':</b> ' + txt;
+  el.style.opacity = '1';
+  clearTimeout(dymTimer);
+  dymTimer = setTimeout(() => el.style.opacity = '0', ms || 2600);
+}
+
+/* ─────────────────────────  HUD  ───────────────────────── */
+function ustawHUD() {
+  if (!G) return;
+  $('#punkty').textContent = String(G.punkty).padStart(6, '0');
+  $('#zycia').textContent = '❤︎'.repeat(Math.max(0, G.zycia)) || '—';
+  $('#fala').textContent = 'FALA ' + G.fala;
+  const suma = G.pierwszorazowi + G.kontynuacje;
+  const r = suma ? G.pierwszorazowi / suma : 1;
+  $('#ratioTxt').textContent = Math.round(r * 100) + '% (' + G.pierwszorazowi + '/' + suma + ')';
+  const w = $('#pasekWyp');
+  w.style.width = Math.round(ogranicz(r, 0, 1) * 100) + '%';
+  w.style.background = r >= PROG ? 'var(--zielony)' : r >= PROG * .6 ? 'var(--zolty)' : 'var(--czerw)';
+  $('#prog').style.left = (PROG * 100) + '%';
+  $('#kara').classList.toggle('ukryty', G.karaFale <= 0);
+  $('#karaFale').textContent = G.karaFale;
+  if (G.boss) $('#bossWyp').style.width = Math.max(0, G.boss.hp / G.boss.maxHp * 100) + '%';
+}
+
+function dodajPunkty(n) {
+  const mnoznik = G.karaFale > 0 ? .75 : 1;
+  G.punkty += Math.round(n * mnoznik);
+  ustawHUD();
+}
+
+/* ─────────────────────────  STEROWANIE  ───────────────────────── */
+const K = {};
+const MAPA = { ArrowLeft: 'lewo', ArrowRight: 'prawo', ArrowUp: 'ciag', ArrowDown: 'dol',
+               KeyA: 'lewo', KeyD: 'prawo', KeyW: 'ciag', KeyS: 'dol',
+               Space: 'ogien', ShiftLeft: 'hiper', ShiftRight: 'hiper' };
+addEventListener('keydown', e => {
+  if (MAPA[e.code]) { K[MAPA[e.code]] = true; e.preventDefault(); }
+  if (e.code === 'KeyM') { const on = A.przelacz(); komunikat(on ? '♪ DŹWIĘK' : '✕ CISZA', '', 900); }
+  if (e.code === 'KeyP' && G && (G.stan === 'gra' || G.stan === 'pauza')) pauza();
+  if (e.code === 'Enter' && G && G.stan === 'koniec') start();
+});
+addEventListener('keyup', e => { if (MAPA[e.code]) { K[MAPA[e.code]] = false; e.preventDefault(); } });
+addEventListener('blur', () => { for (const k in K) K[k] = false; });
+
+/* dotyk */
+if (matchMedia('(pointer: coarse)').matches) document.body.classList.add('dotyk');
+function przycisk(id, klucz) {
+  const el = document.getElementById(id);
+  const on = e => { e.preventDefault(); K[klucz] = true; };
+  const off = e => { e.preventDefault(); K[klucz] = false; };
+  el.addEventListener('touchstart', on, { passive: false });
+  el.addEventListener('touchend', off, { passive: false });
+  el.addEventListener('touchcancel', off, { passive: false });
+  el.addEventListener('mousedown', on);
+  addEventListener('mouseup', off);
+}
+przycisk('bLewo', 'lewo'); przycisk('bPrawo', 'prawo');
+przycisk('bCiag', 'ciag'); przycisk('bOgien', 'ogien'); przycisk('bHiper', 'hiper');
+
+/* ─────────────────────────  LOGIKA  ───────────────────────── */
+function zawin(o, margines) {
+  const m = margines === undefined ? o.r : margines;
+  if (o.x < -m) o.x = W + m;
+  if (o.x > W + m) o.x = -m;
+  if (o.y < -m) o.y = H + m;
+  if (o.y > H + m) o.y = -m;
+}
+function blisko(a, b, dodatek) {
+  const dx = a.x - b.x, dy = a.y - b.y, r = a.r + b.r + (dodatek || 0);
+  return dx * dx + dy * dy < r * r;
+}
+
+function strzel() {
+  const g = G.gracz;
+  if (g.cooldown > 0 || !g.zywy) return;
+  g.cooldown = .17;
+  G.strzaly++;
+  const nx = Math.cos(g.kat), ny = Math.sin(g.kat);
+  G.pociski.push({ x: g.x + nx * (g.r + 6), y: g.y + ny * (g.r + 6),
+                   vx: nx * 560 + g.vx * .35, vy: ny * 560 + g.vy * .35,
+                   kat: g.kat, zycie: 1.05, r: 6 });
+  g.vx -= nx * 12; g.vy -= ny * 12;
+  A.sfx('sfx_strzal', .32);
+  if (Math.random() < .045) A.vo(wybierz(['m_strzal1', 'm_strzal2', 'm_strzal3']), 1);
+}
+
+function hiperskok() {
+  const g = G.gracz;
+  if (g.hiperCooldown > 0 || !g.zywy) return;
+  g.hiperCooldown = 4;
+  czastki(g.x, g.y, 26, '#5ad7ff', 200);
+  g.x = los(60, W - 60); g.y = los(60, H - 60);
+  g.vx *= .25; g.vy *= .25;
+  G.nietykalnosc = Math.max(G.nietykalnosc, .9);
+  czastki(g.x, g.y, 26, '#5ad7ff', 200);
+  A.sfx('sfx_hiper', .5);
+}
+
+function rozbij(s, i) {
+  const t = TYPY[s.typ];
+  A.sfx(t.sfx, .45);
+  czastki(s.x, s.y, s.rozmiar === 3 ? 24 : s.rozmiar === 2 ? 16 : 10, t.kolor, 150 + s.rozmiar * 30);
+  G.skaly.splice(i, 1);
+  G.zabiciWFali++;
+
+  const teraz = performance.now();
+  if (teraz < G.comboDo) G.combo++; else G.combo = 1;
+  G.comboDo = teraz + 2000;
+  const mnoznikCombo = 1 + Math.min(G.combo - 1, 9) * .1;
+  const pkt = Math.round(t.pkt * s.rozmiar * mnoznikCombo);
+  dodajPunkty(pkt);
+  tekstLatajacy(s.x, s.y, '+' + Math.round(pkt * (G.karaFale > 0 ? .75 : 1))
+    + (G.combo > 2 ? ' ×' + G.combo : ''), t.kolor);
+
+  if (Math.random() < .12) A.vo(t.vo, 1);
+  if (s.rozmiar > 1) {
+    for (let k = 0; k < 2; k++) {
+      const n = nowaSkala(s.typ, s.rozmiar - 1, s.x, s.y, G.fala);
+      const kat = los(0, TAU), v = los(45, 110);
+      n.vx = s.vx * .5 + Math.cos(kat) * v;
+      n.vy = s.vy * .5 + Math.sin(kat) * v;
+      G.skaly.push(n);
+    }
+  }
+  /* czasem z rozwalonego problemu wypada pierwszorazowy */
+  if (s.rozmiar === 1 && Math.random() < .22) G.pacjenci.push(Object.assign(nowyPacjent('pierwszy'), {
+    x: s.x, y: s.y, vx: los(-30, 30), vy: los(-30, 30), zycie: 9
+  }));
+}
+
+function obrywa() {
+  if (G.nietykalnosc > 0 || !G.gracz.zywy) return;
+  G.zycia--;
+  G.trzask = .55;
+  czastki(G.gracz.x, G.gracz.y, 30, '#ff3ea5', 220);
+  A.sfx('sfx_hit', .6);
+  ustawHUD();
+  if (G.zycia <= 0) {
+    G.gracz.zywy = false;
+    A.sfx('sfx_smierc', .7);
+    A.vo('m_smierc', 4);
+    czastki(G.gracz.x, G.gracz.y, 60, '#ffd23f', 300);
+    setTimeout(() => koniecGry(false), 1500);
+  } else {
+    G.gracz.x = W / 2; G.gracz.y = H / 2; G.gracz.vx = 0; G.gracz.vy = 0;
+    G.nietykalnosc = 2.6;
+    A.vo('m_zycie', 2);
+  }
+}
+
+function rozliczFale() {
+  const suma = G.pierwszorazowi + G.kontynuacje;
+  const r = suma ? G.pierwszorazowi / suma : 1;
+  if (G.karaFale > 0) {
+    G.karaFale--;
+    if (G.karaFale === 0) komunikat('KARA ZDJĘTA', 'na razie', 1800);
+  }
+  if (r < PROG && suma >= 4) {
+    G.karaFale = 3;
+    G.punkty = Math.round(G.punkty * .75);
+    A.sfx('sfx_kara', .7);
+    A.vo('u_kara', 4);
+    setTimeout(() => A.vo('m_kara', 4), 3600);
+    komunikat('KONTROLA NFZ', '−25% przychodu przez 3 fale · wskaźnik ' + Math.round(r * 100) + '%', 3600);
+    dymek('MACIEK', 'A co ja miałem zrobić? Z ulicy ich ściągać?', 4200);
+  } else if (suma >= 4) {
+    const premia = 120 + G.fala * 30;
+    dodajPunkty(premia);
+    A.vo('u_ratio_ok', 2);
+    komunikat('WSKAŹNIK OK', 'premia +' + premia, 2000);
+  }
+  /* reset okresu rozliczeniowego */
+  G.pierwszorazowi = 0; G.kontynuacje = 0;
+  ustawHUD();
+}
+
+/* ─────────────────────────  BOSS  ───────────────────────── */
+const KWESTIE_KASI = [
+  ['k_atak1', 'Paragraf drugi, ustęp piąty!'],
+  ['k_atak2', 'To się tak nie rozlicza, Maciusiu.'],
+  ['k_atak3', 'Załącznik numer siedem. Poproszę.'],
+  ['k_atak4', 'A ja mówiłam, że tak będzie.']
+];
+
+function bossAktualizuj(dt) {
+  const b = G.boss, g = G.gracz;
+  b.ruchFaza += dt * .8;
+  b.x += b.vx * dt;
+  b.y = H * .26 + Math.sin(b.ruchFaza) * H * .10;
+  if (b.x < b.r + 20) { b.x = b.r + 20; b.vx = Math.abs(b.vx); }
+  if (b.x > W - b.r - 20) { b.x = W - b.r - 20; b.vx = -Math.abs(b.vx); }
+  b.blysk = Math.max(0, b.blysk - dt * 4);
+
+  const wsciekla = b.hp / b.maxHp < .4;
+  b.atakCd -= dt * (wsciekla ? 1.5 : 1);
+  if (b.atakCd <= 0) {
+    b.atakCd = Math.max(.75, 2.1 - b.poziom * .18 - (wsciekla ? .5 : 0));
+    const wzor = losInt(0, 2);
+    if (wzor === 0) {                          // seria decyzji w gracza
+      for (let i = -1; i <= 1; i++) {
+        const kat = Math.atan2(g.y - b.y, g.x - b.x) + i * .22;
+        G.wrogPociski.push(pociskKasi(b.x, b.y + b.r * .5, kat, 210));
+      }
+    } else if (wzor === 1) {                   // wachlarz paragrafów
+      const n = 8 + b.poziom * 2;
+      for (let i = 0; i < n; i++) {
+        G.wrogPociski.push(pociskKasi(b.x, b.y, (i / n) * TAU + b.ruchFaza, 145));
+      }
+    } else {                                   // dorzuca problemy do gry
+      for (let i = 0; i < 2; i++) {
+        const s = nowaSkala(losujTyp(G.fala), 2, b.x + los(-40, 40), b.y + 40, G.fala);
+        G.skaly.push(s);
+      }
+      A.sfx('sfx_paragraf', .4);
+    }
+  }
+  b.gadaCd -= dt;
+  if (b.gadaCd <= 0) {
+    b.gadaCd = los(6, 10);
+    const kw = wybierz(KWESTIE_KASI);
+    A.vo(kw[0], 2); dymek('CIOCIA KASIA', kw[1], 3000);
+  }
+  /* kolizja z graczem */
+  if (g.zywy && blisko(b, g, -10)) obrywa();
+}
+
+function pociskKasi(x, y, kat, v) {
+  return { x, y, vx: Math.cos(kat) * v, vy: Math.sin(kat) * v,
+           kat, zycie: 6, r: 11, obrot: los(0, TAU), obrotV: los(-3, 3) };
+}
+
+function bossOberwal(dmg) {
+  const b = G.boss;
+  b.hp -= dmg; b.blysk = 1;
+  czastki(b.x + los(-30, 30), b.y + los(-30, 30), 8, '#ff3ea5', 140);
+  if (Math.random() < .18) { A.vo('k_trafiona', 2); dymek('CIOCIA KASIA', 'Jak ty się do cioci odzywasz!', 2200); }
+  ustawHUD();
+  if (b.hp <= 0) {
+    czastki(b.x, b.y, 90, '#ff3ea5', 320);
+    czastki(b.x, b.y, 60, '#ffd23f', 260);
+    A.sfx('sfx_bum', .8);
+    A.vo('k_smierc', 4);
+    setTimeout(() => A.vo('m_wygrana', 4), 2200);
+    const premia = 900 + b.poziom * 600;
+    dodajPunkty(premia);
+    komunikat('CIOCIA KASIA POKONANA', '+' + premia + ' · odzyskujesz życie', 3200);
+    dymek('CIOCIA KASIA', 'Ja to jeszcze zaskarżę!', 3000);
+    G.zycia = Math.min(5, G.zycia + 1);
+    G.boss = null;
+    $('#bossPasek').classList.add('ukryty');
+    G.trzask = .8;
+    ustawHUD();
+  }
+}
+
+/* ─────────────────────────  PĘTLA  ───────────────────────── */
+function aktualizuj(dt) {
+  const g = G.gracz;
+  G.czas += dt;
+  G.trzask = Math.max(0, G.trzask - dt * 1.8);
+  G.nietykalnosc = Math.max(0, G.nietykalnosc - dt);
+
+  /* --- gracz --- */
+  if (g.zywy) {
+    if (K.lewo) g.kat -= 4.3 * dt;
+    if (K.prawo) g.kat += 4.3 * dt;
+    g.ciag = !!K.ciag;
+    if (g.ciag) {
+      g.vx += Math.cos(g.kat) * 330 * dt;
+      g.vy += Math.sin(g.kat) * 330 * dt;
+      if (Math.random() < .55) {
+        const tx = g.x - Math.cos(g.kat) * g.r, ty = g.y - Math.sin(g.kat) * g.r;
+        G.czastki.push({ x: tx, y: ty, vx: -Math.cos(g.kat) * los(60, 150) + los(-30, 30),
+                         vy: -Math.sin(g.kat) * los(60, 150) + los(-30, 30),
+                         zycie: .35, max: .35, kolor: Math.random() < .5 ? '#ffd23f' : '#ff7a3e', r: los(1.5, 3.2) });
+      }
+    }
+    const v = Math.hypot(g.vx, g.vy), max = 480;
+    if (v > max) { g.vx = g.vx / v * max; g.vy = g.vy / v * max; }
+    g.vx *= Math.pow(.55, dt); g.vy *= Math.pow(.55, dt);
+    g.x += g.vx * dt; g.y += g.vy * dt;
+    zawin(g);
+    g.cooldown -= dt; g.hiperCooldown -= dt;
+    if (K.ogien) strzel();
+    if (K.hiper) { hiperskok(); K.hiper = false; }
+  }
+
+  /* --- pociski gracza --- */
+  for (let i = G.pociski.length - 1; i >= 0; i--) {
+    const p = G.pociski[i];
+    p.x += p.vx * dt; p.y += p.vy * dt; p.zycie -= dt;
+    zawin(p, 8);
+    if (p.zycie <= 0) { G.pociski.splice(i, 1); continue; }
+    let trafil = false;
+    for (let j = G.skaly.length - 1; j >= 0; j--) {
+      const s = G.skaly[j];
+      if (blisko(p, s)) {
+        G.trafienia++;
+        s.hp--; s.blysk = 1;
+        G.pociski.splice(i, 1); trafil = true;
+        if (s.hp <= 0) rozbij(s, j);
+        else { czastki(p.x, p.y, 5, TYPY[s.typ].kolor, 90); A.sfx('sfx_hit', .22); }
+        break;
+      }
+    }
+    if (trafil) continue;
+    if (G.boss && blisko(p, G.boss, -12)) {
+      G.trafienia++;
+      G.pociski.splice(i, 1);
+      bossOberwal(1);
+    }
+  }
+
+  /* --- pociski Kasi --- */
+  for (let i = G.wrogPociski.length - 1; i >= 0; i--) {
+    const p = G.wrogPociski[i];
+    p.x += p.vx * dt; p.y += p.vy * dt; p.zycie -= dt; p.obrot += p.obrotV * dt;
+    zawin(p, 14);
+    if (p.zycie <= 0) { G.wrogPociski.splice(i, 1); continue; }
+    if (g.zywy && G.nietykalnosc <= 0 && blisko(p, g, -4)) {
+      G.wrogPociski.splice(i, 1);
+      obrywa();
+    }
+  }
+
+  /* --- problemy --- */
+  for (let i = G.skaly.length - 1; i >= 0; i--) {
+    const s = G.skaly[i];
+    s.x += s.vx * dt; s.y += s.vy * dt; s.obrot += s.obrotV * dt;
+    s.blysk = Math.max(0, s.blysk - dt * 5);
+    /* kontrola NFZ leci prosto na gracza */
+    if (s.typ === 'kontrola' && g.zywy) {
+      const kat = Math.atan2(g.y - s.y, g.x - s.x);
+      s.vx += Math.cos(kat) * 42 * dt; s.vy += Math.sin(kat) * 42 * dt;
+      const v = Math.hypot(s.vx, s.vy);
+      if (v > 165) { s.vx = s.vx / v * 165; s.vy = s.vy / v * 165; }
+    }
+    zawin(s);
+    if (g.zywy && G.nietykalnosc <= 0 && blisko(s, g, -6)) obrywa();
+  }
+
+  /* --- pacjenci --- */
+  G.spawnKontynuacji -= dt;
+  if (G.spawnKontynuacji <= 0) {
+    /* kontynuacje przychodzą same — w tym cały problem */
+    G.spawnKontynuacji = Math.max(1.5, 4.6 - G.fala * .16);
+    G.pacjenci.push(nowyPacjent('kontynuacja'));
+  }
+  if (G.pacjenci.filter(p => p.rodzaj === 'pierwszy').length < 2 && Math.random() < dt * .55) {
+    G.pacjenci.push(nowyPacjent('pierwszy'));
+  }
+  for (let i = G.pacjenci.length - 1; i >= 0; i--) {
+    const p = G.pacjenci[i];
+    p.x += p.vx * dt; p.y += p.vy * dt; p.zycie -= dt; p.faza += dt * 3;
+    zawin(p, 24);
+    if (p.zycie <= 0) {
+      if (p.rodzaj === 'kontynuacja') {
+        /* nie zdążyłeś — i tak wchodzi do statystyki */
+        G.kontynuacje++;
+        tekstLatajacy(p.x, p.y, 'KONTYNUACJA', '#ffd23f');
+        ustawHUD();
+      }
+      G.pacjenci.splice(i, 1);
+      continue;
+    }
+    if (g.zywy && blisko(p, g, 6)) {
+      G.pacjenci.splice(i, 1);
+      if (p.rodzaj === 'pierwszy') {
+        G.pierwszorazowi++;
+        dodajPunkty(60);
+        czastki(p.x, p.y, 16, '#43ffa1', 150);
+        tekstLatajacy(p.x, p.y, 'PIERWSZORAZOWY +60', '#43ffa1');
+        A.sfx('sfx_pacjent', .5);
+        if (Math.random() < .2) A.vo('m_pacjent', 1);
+      } else {
+        G.kontynuacje++;
+        dodajPunkty(15);
+        czastki(p.x, p.y, 10, '#ffd23f', 110);
+        tekstLatajacy(p.x, p.y, 'kontynuacja +15', '#ffd23f');
+        A.sfx('sfx_hit', .2);
+      }
+      ustawHUD();
+    }
+  }
+
+  /* ostrzeżenie o wskaźniku */
+  const suma = G.pierwszorazowi + G.kontynuacje;
+  if (suma >= 6 && !G.ostrzegal && G.pierwszorazowi / suma < PROG * .75) {
+    G.ostrzegal = true;
+    A.vo('u_ostrzez', 3);
+    setTimeout(() => A.vo('m_low', 2), 3200);
+    dymek('NFZ', 'Zbyt niski przyrost pacjentów pierwszorazowych.', 3400);
+  }
+
+  /* --- cząstki i teksty --- */
+  for (let i = G.czastki.length - 1; i >= 0; i--) {
+    const c = G.czastki[i];
+    c.x += c.vx * dt; c.y += c.vy * dt;
+    c.vx *= Math.pow(.25, dt); c.vy *= Math.pow(.25, dt);
+    c.zycie -= dt;
+    if (c.zycie <= 0) G.czastki.splice(i, 1);
+  }
+  for (let i = G.teksty.length - 1; i >= 0; i--) {
+    const t = G.teksty[i];
+    t.y -= 34 * dt; t.zycie -= dt;
+    if (t.zycie <= 0) G.teksty.splice(i, 1);
+  }
+
+  /* --- boss --- */
+  if (G.boss) bossAktualizuj(dt);
+
+  /* --- koniec fali --- */
+  if (!G.boss && G.skaly.length === 0 && G.przerwa <= 0 && g.zywy) {
+    G.przerwa = 2.4;
+    rozliczFale();
+    G.ostrzegal = false;
+  }
+  if (G.przerwa > 0) {
+    G.przerwa -= dt;
+    if (G.przerwa <= 0) startFali();
+  }
+}
+
+/* ─────────────────────────  RYSOWANIE  ───────────────────────── */
+function tlo(t) {
+  ctx.fillStyle = '#05060f';
+  ctx.fillRect(0, 0, W, H);
+  /* mgławica */
+  const grad = ctx.createRadialGradient(W * .3, H * .25, 0, W * .3, H * .25, Math.max(W, H) * .8);
+  grad.addColorStop(0, 'rgba(80,20,110,.30)');
+  grad.addColorStop(.5, 'rgba(20,10,50,.16)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+  const g2 = ctx.createRadialGradient(W * .78, H * .8, 0, W * .78, H * .8, Math.max(W, H) * .6);
+  g2.addColorStop(0, 'rgba(190,70,30,.16)');
+  g2.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+  /* gwiazdy */
+  for (const s of gwiazdy) {
+    const a = s.j * (.65 + .35 * Math.sin(t * 1.6 * s.m + s.x * 40));
+    ctx.globalAlpha = a;
+    ctx.fillStyle = s.m > .8 ? '#ffe9c9' : '#fff';
+    ctx.fillRect(s.x * W, s.y * H, s.r, s.r);
+  }
+  ctx.globalAlpha = 1;
+  /* kosmiczne country: dalekie mesa na horyzoncie */
+  ctx.save();
+  ctx.globalAlpha = .16;
+  ctx.fillStyle = '#3a1030';
+  const yb = H * .93;
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  ctx.lineTo(0, yb);
+  const mesy = [[.06, .05], [.14, .11], [.2, .04], [.34, .14], [.42, .06],
+                [.58, .1], [.66, .03], [.78, .13], [.88, .06], [.96, .09]];
+  for (const [mx, mh] of mesy) {
+    ctx.lineTo(mx * W - 26, yb);
+    ctx.lineTo(mx * W - 18, yb - mh * H);
+    ctx.lineTo(mx * W + 18, yb - mh * H);
+    ctx.lineTo(mx * W + 26, yb);
+  }
+  ctx.lineTo(W, yb); ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+/* — gracz — */
+function rysujGracza() {
+  const g = G.gracz;
+  if (!g.zywy) return;
+  ctx.save();
+  ctx.translate(g.x, g.y);
+  ctx.rotate(g.kat + Math.PI / 2);
+  if (G.nietykalnosc > 0) ctx.globalAlpha = .35 + .65 * Math.abs(Math.sin(G.czas * 16));
+
+  /* płomień */
+  if (g.ciag) {
+    ctx.save();
+    ctx.beginPath();
+    const dl = 26 + Math.sin(G.czas * 40) * 8;
+    ctx.moveTo(-10, g.r * .8);
+    ctx.lineTo(0, g.r * .8 + dl);
+    ctx.lineTo(10, g.r * .8);
+    ctx.closePath();
+    const fg = ctx.createLinearGradient(0, g.r * .8, 0, g.r * .8 + dl);
+    fg.addColorStop(0, 'rgba(255,220,120,.95)');
+    fg.addColorStop(1, 'rgba(255,60,20,0)');
+    ctx.fillStyle = fg; ctx.fill();
+    ctx.restore();
+  }
+  /* poświata pod Maćkiem */
+  ctx.beginPath();
+  ctx.arc(0, 0, g.r * 1.5, 0, TAU);
+  const pg = ctx.createRadialGradient(0, 0, g.r * .4, 0, 0, g.r * 1.5);
+  pg.addColorStop(0, 'rgba(90,215,255,.28)');
+  pg.addColorStop(1, 'rgba(90,215,255,0)');
+  ctx.fillStyle = pg; ctx.fill();
+
+  if (maciekOK) {
+    const wys = g.r * 2.5, szer = wys * (maciekImg.width / maciekImg.height);
+    ctx.drawImage(maciekImg, -szer / 2, -wys * .62, szer, wys);
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(0, -g.r); ctx.lineTo(g.r * .75, g.r * .8);
+    ctx.lineTo(0, g.r * .45); ctx.lineTo(-g.r * .75, g.r * .8);
+    ctx.closePath();
+    ctx.fillStyle = '#5ad7ff'; ctx.fill();
+  }
+  /* kapelusz kowbojski — kosmiczne country */
+  ctx.save();
+  ctx.translate(0, -g.r * 1.32);
+  ctx.fillStyle = '#6b3f22';
+  ctx.beginPath(); ctx.ellipse(0, 2, g.r * .95, g.r * .21, 0, 0, TAU); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-g.r * .42, 1);
+  ctx.quadraticCurveTo(-g.r * .34, -g.r * .55, 0, -g.r * .52);
+  ctx.quadraticCurveTo(g.r * .34, -g.r * .55, g.r * .42, 1);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#43ffa1';
+  ctx.fillRect(-g.r * .42, -g.r * .06, g.r * .84, g.r * .12);
+  ctx.restore();
+  ctx.restore();
+}
+
+/* — pocisk: Kutas 3000 — */
+function rysujPocisk(p) {
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(p.kat);
+  ctx.shadowColor = '#ff3ea5'; ctx.shadowBlur = 16;
+  ctx.fillStyle = '#ff8ecb';
+  ctx.beginPath();
+  ctx.moveTo(14, 0);
+  ctx.quadraticCurveTo(10, -6, 0, -5.5);
+  ctx.lineTo(-11, -5);
+  ctx.quadraticCurveTo(-16, 0, -11, 5);
+  ctx.lineTo(0, 5.5);
+  ctx.quadraticCurveTo(10, 6, 14, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#ffd7ec';
+  ctx.beginPath(); ctx.arc(11, 0, 4.2, 0, TAU); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+/* — problemy — */
+function rysujSkale(s) {
+  ctx.save();
+  ctx.translate(s.x, s.y);
+  ctx.rotate(s.obrot);
+  const r = s.r;
+  if (s.blysk > 0) { ctx.shadowColor = '#fff'; ctx.shadowBlur = 22 * s.blysk; }
+
+  const K = TYPY[s.typ].kolor;
+  ctx.lineWidth = 2;
+
+  if (s.typ === 'paragraf') {
+    /* stos rozporządzeń z pieczątką */
+    ctx.fillStyle = '#f2f4ff'; ctx.strokeStyle = '#8f9ac9';
+    for (let i = 2; i >= 0; i--) {
+      ctx.save(); ctx.translate(i * 3 - 3, i * 3 - 3); ctx.rotate(i * .07);
+      ctx.beginPath(); ctx.rect(-r * .68, -r * .85, r * 1.36, r * 1.7);
+      ctx.fill(); ctx.stroke(); ctx.restore();
+    }
+    ctx.fillStyle = '#b9c1e0';
+    for (let i = 0; i < 5; i++) ctx.fillRect(-r * .48, -r * .55 + i * r * .27, r * (i % 2 ? .7 : .95), 2.6);
+    ctx.fillStyle = '#ff3b3b';
+    ctx.font = 'bold ' + Math.round(r * 1.05) + 'px Georgia,serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.globalAlpha = .85; ctx.fillText('§', r * .12, r * .1); ctx.globalAlpha = 1;
+  } else if (s.typ === 'drukarka') {
+    ctx.fillStyle = '#8fa0b5'; ctx.strokeStyle = '#5c6b7d';
+    ctx.beginPath(); ctx.rect(-r * .85, -r * .4, r * 1.7, r * .95); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#43506b';
+    ctx.fillRect(-r * .55, -r * .2, r * 1.1, r * .18);
+    /* zacięta kartka */
+    ctx.save(); ctx.rotate(-.22);
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#c4ccd8';
+    ctx.beginPath(); ctx.rect(-r * .42, -r * 1.15, r * .85, r * .8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#b9c1cf';
+    ctx.fillRect(-r * .3, -r * .98, r * .6, 2); ctx.fillRect(-r * .3, -r * .82, r * .45, 2);
+    ctx.restore();
+    /* czerwona lampka */
+    ctx.fillStyle = Math.sin(G.czas * 9 + s.ziarno) > 0 ? '#ff3b3b' : '#5a1010';
+    ctx.beginPath(); ctx.arc(r * .6, -r * .1, r * .1, 0, TAU); ctx.fill();
+  } else if (s.typ === 'monitor') {
+    ctx.fillStyle = '#2b3340'; ctx.strokeStyle = '#59677d';
+    ctx.beginPath(); ctx.rect(-r * .88, -r * .72, r * 1.76, r * 1.28); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#0a2a5e';
+    ctx.fillRect(-r * .72, -r * .58, r * 1.44, r * 1.0);
+    /* pęknięcia */
+    ctx.strokeStyle = 'rgba(180,230,255,.8)'; ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(-r * .5, -r * .5); ctx.lineTo(r * .05, -r * .05); ctx.lineTo(r * .55, r * .3);
+    ctx.moveTo(r * .05, -r * .05); ctx.lineTo(-r * .35, r * .35);
+    ctx.moveTo(r * .05, -r * .05); ctx.lineTo(r * .3, -r * .55);
+    ctx.stroke();
+    ctx.fillStyle = '#cfe8ff'; ctx.font = 'bold ' + Math.round(r * .34) + 'px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(':(', 0, r * .08);
+    ctx.fillStyle = '#333b48'; ctx.fillRect(-r * .2, r * .56, r * .4, r * .2);
+  } else if (s.typ === 'babcia') {
+    /* chustka + wściekła mina */
+    ctx.fillStyle = '#ffe0cc';
+    ctx.beginPath(); ctx.arc(0, 0, r * .72, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#e0457b';
+    ctx.beginPath();
+    ctx.arc(0, -r * .1, r * .78, Math.PI * 1.02, Math.PI * 1.98); ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-r * .74, -r * .05); ctx.quadraticCurveTo(0, r * .5, r * .74, -r * .05);
+    ctx.quadraticCurveTo(r * .4, r * .95, 0, r * .78);
+    ctx.quadraticCurveTo(-r * .4, r * .95, -r * .74, -r * .05);
+    ctx.fill();
+    ctx.strokeStyle = '#3a2a2a'; ctx.lineWidth = Math.max(1.6, r * .06);
+    ctx.beginPath();
+    ctx.moveTo(-r * .44, -r * .28); ctx.lineTo(-r * .12, -r * .14);
+    ctx.moveTo(r * .44, -r * .28); ctx.lineTo(r * .12, -r * .14);
+    ctx.stroke();
+    ctx.fillStyle = '#3a2a2a';
+    ctx.beginPath(); ctx.arc(-r * .26, -r * .02, r * .09, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * .26, -r * .02, r * .09, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#a03a5a';
+    ctx.beginPath(); ctx.arc(0, r * .52, r * .26, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
+  } else if (s.typ === 'debil') {
+    ctx.fillStyle = '#ffdfae';
+    ctx.beginPath(); ctx.arc(0, 0, r * .74, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#ffd23f';
+    ctx.beginPath();
+    ctx.moveTo(-r * .8, -r * .3); ctx.lineTo(0, -r * 1.15); ctx.lineTo(r * .8, -r * .3);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#2a2018';
+    ctx.beginPath(); ctx.arc(-r * .25, -r * .05, r * .11, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * .25, -r * .05, r * .11, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#2a2018'; ctx.lineWidth = Math.max(1.6, r * .07);
+    ctx.beginPath(); ctx.arc(0, r * .22, r * .3, .15, Math.PI - .15); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-r * .12, r * .3, r * .1, r * .16);
+  } else if (s.typ === 'kontrola') {
+    /* teczka z napisem NFZ, migająca */
+    const puls = .6 + .4 * Math.sin(G.czas * 8 + s.ziarno);
+    ctx.shadowColor = '#ff4d4d'; ctx.shadowBlur = 18 * puls;
+    ctx.fillStyle = '#5d2b2b'; ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.rect(-r * .88, -r * .62, r * 1.76, r * 1.2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#ff9a9a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.rect(-r * .28, -r * .88, r * .56, r * .28); ctx.stroke();
+    ctx.fillStyle = '#ffdada';
+    ctx.font = 'bold ' + Math.round(r * .46) + 'px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('NFZ', 0, r * .02);
+    ctx.shadowBlur = 0;
+  }
+  ctx.restore();
+
+  /* podpis przy dużych */
+  if (s.rozmiar === 3) {
+    ctx.save();
+    ctx.globalAlpha = .5;
+    ctx.fillStyle = K;
+    ctx.font = '10px "Courier New",monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(TYPY[s.typ].nazwa, s.x, s.y + s.r + 15);
+    ctx.restore();
+  }
+}
+
+/* — pacjenci — */
+function rysujPacjenta(p) {
+  const pierwszy = p.rodzaj === 'pierwszy';
+  const kolor = pierwszy ? '#43ffa1' : '#ffd23f';
+  const skala = 1 + Math.sin(p.faza) * .09;
+  const gasnie = p.zycie < 3 ? (.4 + .6 * Math.abs(Math.sin(p.zycie * 8))) : 1;
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.globalAlpha = gasnie;
+  ctx.scale(skala, skala);
+  ctx.shadowColor = kolor; ctx.shadowBlur = pierwszy ? 20 : 10;
+  /* serce */
+  ctx.fillStyle = kolor;
+  ctx.beginPath();
+  const r = p.r;
+  ctx.moveTo(0, r * .62);
+  ctx.bezierCurveTo(-r * 1.25, -r * .28, -r * .48, -r * 1.1, 0, -r * .42);
+  ctx.bezierCurveTo(r * .48, -r * 1.1, r * 1.25, -r * .28, 0, r * .62);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  /* linia EKG */
+  ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.moveTo(-r * .62, -r * .1); ctx.lineTo(-r * .24, -r * .1);
+  ctx.lineTo(-r * .1, -r * .42); ctx.lineTo(r * .06, r * .18);
+  ctx.lineTo(r * .2, -r * .1); ctx.lineTo(r * .62, -r * .1);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = .75 * gasnie;
+  ctx.fillStyle = kolor;
+  ctx.font = 'bold 9px "Courier New",monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(pierwszy ? 'PIERWSZORAZOWY' : 'kontynuacja', p.x, p.y + p.r + 16);
+  ctx.restore();
+}
+
+/* — pocisk Kasi: decyzja administracyjna — */
+function rysujPociskKasi(p) {
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(p.obrot);
+  ctx.shadowColor = '#ff6b6b'; ctx.shadowBlur = 12;
+  ctx.fillStyle = '#fff5f5'; ctx.strokeStyle = '#ff4d4d'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.rect(-9, -11, 18, 22); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#ff4d4d';
+  ctx.font = 'bold 11px Georgia,serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('§', 0, 0);
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+/* — CIOCIA KASIA — */
+function rysujBossa() {
+  const b = G.boss;
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  const r = b.r;
+  const bujanie = Math.sin(G.czas * 2.2) * .05;
+  ctx.rotate(bujanie);
+  if (b.blysk > 0) { ctx.shadowColor = '#fff'; ctx.shadowBlur = 30 * b.blysk; }
+
+  /* aura */
+  const aura = ctx.createRadialGradient(0, 0, r * .5, 0, 0, r * 1.7);
+  aura.addColorStop(0, 'rgba(255,62,165,.22)');
+  aura.addColorStop(1, 'rgba(255,62,165,0)');
+  ctx.fillStyle = aura;
+  ctx.beginPath(); ctx.arc(0, 0, r * 1.7, 0, TAU); ctx.fill();
+
+  /* korpus — kwiecista bluzka */
+  ctx.fillStyle = '#7a2f5e';
+  ctx.beginPath();
+  ctx.moveTo(-r * .95, r * 1.5);
+  ctx.quadraticCurveTo(-r * .85, r * .3, -r * .5, r * .18);
+  ctx.lineTo(r * .5, r * .18);
+  ctx.quadraticCurveTo(r * .85, r * .3, r * .95, r * 1.5);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,210,63,.55)';
+  for (let i = 0; i < 12; i++) {
+    const a = (i * 2.399) + b.ruchFaza * .1;
+    const rr = r * (.25 + (i % 4) * .18);
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * rr * .8, r * .75 + Math.sin(a) * rr * .5, r * .06, 0, TAU);
+    ctx.fill();
+  }
+
+  /* twarz */
+  ctx.fillStyle = '#ffdcc0';
+  ctx.beginPath(); ctx.arc(0, -r * .18, r * .7, 0, TAU); ctx.fill();
+  /* kok */
+  ctx.fillStyle = '#8b6f5a';
+  ctx.beginPath(); ctx.arc(0, -r * .95, r * .34, 0, TAU); ctx.fill();
+  ctx.beginPath();
+  ctx.arc(0, -r * .3, r * .74, Math.PI * 1.05, Math.PI * 1.95); ctx.fill();
+  /* okulary */
+  ctx.strokeStyle = '#2b2b3a'; ctx.lineWidth = Math.max(2, r * .045);
+  ctx.beginPath(); ctx.arc(-r * .27, -r * .22, r * .21, 0, TAU); ctx.stroke();
+  ctx.beginPath(); ctx.arc(r * .27, -r * .22, r * .21, 0, TAU); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-r * .06, -r * .22); ctx.lineTo(r * .06, -r * .22); ctx.stroke();
+  ctx.fillStyle = 'rgba(180,235,255,.28)';
+  ctx.beginPath(); ctx.arc(-r * .27, -r * .22, r * .2, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(r * .27, -r * .22, r * .2, 0, TAU); ctx.fill();
+  /* oczy */
+  ctx.fillStyle = '#1a1a24';
+  ctx.beginPath(); ctx.arc(-r * .27, -r * .21, r * .07, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(r * .27, -r * .21, r * .07, 0, TAU); ctx.fill();
+  /* brwi — im mniej HP, tym bardziej wkurzona */
+  const zloscia = 1 - b.hp / b.maxHp;
+  ctx.strokeStyle = '#5a4436'; ctx.lineWidth = Math.max(2, r * .05);
+  ctx.beginPath();
+  ctx.moveTo(-r * .48, -r * .5 + zloscia * r * .1); ctx.lineTo(-r * .1, -r * .38 - zloscia * r * .08);
+  ctx.moveTo(r * .48, -r * .5 + zloscia * r * .1); ctx.lineTo(r * .1, -r * .38 - zloscia * r * .08);
+  ctx.stroke();
+  /* usta */
+  ctx.strokeStyle = '#a83a5a'; ctx.lineWidth = Math.max(2, r * .05);
+  ctx.beginPath();
+  ctx.arc(0, r * .22, r * .24, Math.PI * (1.1 - zloscia * .05), Math.PI * (1.9 + zloscia * .05));
+  ctx.stroke();
+
+  /* pieczątka w ręce */
+  ctx.save();
+  ctx.translate(r * .95, r * .55);
+  ctx.rotate(Math.sin(G.czas * 5) * .3 - .3);
+  ctx.fillStyle = '#4b3b2a';
+  ctx.fillRect(-r * .07, -r * .38, r * .14, r * .34);
+  ctx.fillStyle = '#c0392b';
+  ctx.fillRect(-r * .19, -r * .06, r * .38, r * .14);
+  ctx.restore();
+
+  /* teczka z drugiej strony */
+  ctx.save();
+  ctx.translate(-r * .95, r * .6);
+  ctx.rotate(-.2);
+  ctx.fillStyle = '#5d3b2b'; ctx.strokeStyle = '#3a251a'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.rect(-r * .22, -r * .18, r * .44, r * .34); ctx.fill(); ctx.stroke();
+  ctx.restore();
+
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+function rysuj(t) {
+  ctx.save();
+  if (G && G.trzask > 0) {
+    const s = G.trzask * 16;
+    ctx.translate(los(-s, s), los(-s, s));
+  }
+  tlo(t);
+  if (G) {
+    for (const p of G.pacjenci) rysujPacjenta(p);
+    for (const s of G.skaly) rysujSkale(s);
+    if (G.boss) rysujBossa();
+    for (const p of G.wrogPociski) rysujPociskKasi(p);
+    for (const p of G.pociski) rysujPocisk(p);
+    rysujGracza();
+    /* cząstki */
+    for (const c of G.czastki) {
+      ctx.globalAlpha = ogranicz(c.zycie / c.max, 0, 1);
+      ctx.fillStyle = c.kolor;
+      ctx.fillRect(c.x - c.r / 2, c.y - c.r / 2, c.r, c.r);
+    }
+    ctx.globalAlpha = 1;
+    /* teksty */
+    ctx.textAlign = 'center';
+    for (const tx of G.teksty) {
+      ctx.globalAlpha = ogranicz(tx.zycie / tx.max, 0, 1);
+      ctx.fillStyle = tx.kolor;
+      ctx.font = 'bold 13px "Courier New",monospace';
+      ctx.fillText(tx.txt, tx.x, tx.y);
+    }
+    ctx.globalAlpha = 1;
+    /* czerwona winieta gdy kara */
+    if (G.karaFale > 0) {
+      const v = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .72);
+      v.addColorStop(0, 'rgba(255,0,0,0)');
+      v.addColorStop(1, 'rgba(255,0,40,' + (.16 + .05 * Math.sin(t * 2)) + ')');
+      ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+    }
+  }
+  ctx.restore();
+}
+
+/* ─────────────────────────  PĘTLA GŁÓWNA  ───────────────────────── */
+let ostatni = performance.now();
+function klatka(teraz) {
+  const dt = Math.min((teraz - ostatni) / 1000, .05);
+  ostatni = teraz;
+  if (G && G.stan === 'gra') aktualizuj(dt);
+  rysuj(teraz / 1000);
+  requestAnimationFrame(klatka);
+}
+requestAnimationFrame(klatka);
+
+/* ─────────────────────────  EKRANY  ───────────────────────── */
+function start() {
+  A.odblokuj();
+  $('#ekranMenu').classList.add('ukryty');
+  $('#ekranKoniec').classList.add('ukryty');
+  $('#ekranPauza').classList.add('ukryty');
+  $('#hud').classList.remove('ukryty');
+  nowaGra();
+  A.vo('m_start', 3);
+  startFali();
+}
+
+function pauza() {
+  if (G.stan === 'gra') { G.stan = 'pauza'; $('#ekranPauza').classList.remove('ukryty'); }
+  else { G.stan = 'gra'; ostatni = performance.now(); $('#ekranPauza').classList.add('ukryty'); }
+}
+
+function koniecGry() {
+  G.stan = 'koniec';
+  A.muz('muz_koniec');
+  A.vo('u_koniec', 5);
+  setTimeout(() => A.vo('m_koniec', 5), 3600);
+  $('#hud').classList.add('ukryty');
+  $('#bossPasek').classList.add('ukryty');
+  const celnosc = G.strzaly ? Math.round(G.trafienia / G.strzaly * 100) : 0;
+  const rekord = Math.max(G.punkty, +(localStorage.getItem('maciek_rekord') || 0));
+  localStorage.setItem('maciek_rekord', rekord);
+  $('#koniecTabela').innerHTML =
+    'przychód: <b>' + G.punkty + '</b><br>' +
+    'rekord poradni: <b>' + rekord + '</b><br>' +
+    'dotarłeś do fali: <b>' + G.fala + '</b><br>' +
+    'celność Kutasa 3000: <b>' + celnosc + '%</b><br>' +
+    (G.karaFale > 0 ? '<span class="c">zszedłeś z kontrolą na karku</span>'
+                    : '<span class="z">wskaźnik na koniec: w normie</span>');
+  $('#ekranKoniec').classList.remove('ukryty');
+}
+
+$('#bStart').onclick = start;
+$('#bZnowu').onclick = start;
+$('#bWroc').onclick = pauza;
+$('#ekranMenu').addEventListener('pointerdown', () => A.odblokuj(), { once: true });
+
+/* muzyka menu po pierwszej interakcji */
+addEventListener('pointerdown', function raz() {
+  A.odblokuj();
+  if (!G || G.stan !== 'gra') A.muz('muz_menu');
+  removeEventListener('pointerdown', raz);
+}, { once: true });
+addEventListener('keydown', function raz() {
+  A.odblokuj();
+  if (!G || G.stan !== 'gra') A.muz('muz_menu');
+  removeEventListener('keydown', raz);
+}, { once: true });
+
+/* ═══════════════════════════════════════════════════════════════════
+   PWA — instalacja, praca offline i odświeżanie wersji
+   ═══════════════════════════════════════════════════════════════════ */
+(() => {
+  const banner = $('#nowaWersja');
+  const bInst = $('#bInstaluj'), bSprawdz = $('#bSprawdz');
+  let rejestracja = null, czekajacy = null, przeladowuje = false;
+
+  function pokazBanner(sw) {
+    czekajacy = sw;
+    banner.classList.remove('ukryty');
+  }
+  $('#bOdswiez').onclick = () => {
+    banner.classList.add('ukryty');
+    if (czekajacy) czekajacy.postMessage('wskakuj');
+    else location.reload();
+  };
+  $('#bPozniej').onclick = () => banner.classList.add('ukryty');
+
+  if (!('serviceWorker' in navigator)) {
+    bSprawdz.classList.add('ukryty');
+    $('#wNumer').textContent = 'bez SW';
+    return;
+  }
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (przeladowuje) return;
+    przeladowuje = true;
+    location.reload();
+  });
+  navigator.serviceWorker.addEventListener('message', e => {
+    const d = e.data || {};
+    if (d.typ === 'wersja') $('#wNumer').textContent = d.wersja;
+    if (d.typ === 'offline-gotowe') {
+      $('#wNumer').textContent = d.wersja;
+      $('#stanOffline').textContent = 'działa offline ✓';
+    }
+  });
+
+  function pilnujAktualizacji(r) {
+    if (r.waiting && navigator.serviceWorker.controller) pokazBanner(r.waiting);
+    r.addEventListener('updatefound', () => {
+      const nowy = r.installing;
+      if (!nowy) return;
+      nowy.addEventListener('statechange', () => {
+        if (nowy.state === 'installed' && navigator.serviceWorker.controller) pokazBanner(nowy);
+      });
+    });
+  }
+
+  addEventListener('load', async () => {
+    try {
+      rejestracja = await navigator.serviceWorker.register('sw.js', { scope: './' });
+      pilnujAktualizacji(rejestracja);
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage('wersja');
+        $('#stanOffline').textContent = 'działa offline ✓';
+      }
+      /* cichy podgląd co 30 min oraz przy powrocie do karty */
+      setInterval(() => rejestracja.update().catch(() => {}), 30 * 60 * 1000);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) rejestracja.update().catch(() => {});
+      });
+    } catch (e) {
+      $('#wNumer').textContent = 'lokalna';
+    }
+  });
+
+  bSprawdz.onclick = async () => {
+    bSprawdz.textContent = '↻ SPRAWDZAM…';
+    try {
+      if (rejestracja) await rejestracja.update();
+      await new Promise(r => setTimeout(r, 900));
+      if (banner.classList.contains('ukryty')) {
+        bSprawdz.textContent = '✓ MASZ NAJNOWSZĄ';
+        setTimeout(() => bSprawdz.textContent = '↻ SPRAWDŹ WERSJĘ', 2200);
+      } else {
+        bSprawdz.textContent = '↻ SPRAWDŹ WERSJĘ';
+      }
+    } catch (e) {
+      bSprawdz.textContent = '✕ BRAK SIECI';
+      setTimeout(() => bSprawdz.textContent = '↻ SPRAWDŹ WERSJĘ', 2200);
+    }
+  };
+
+  /* --- instalacja --- */
+  let zachetaInstalacji = null;
+  addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    zachetaInstalacji = e;
+    bInst.classList.remove('ukryty');
+  });
+  bInst.onclick = async () => {
+    if (!zachetaInstalacji) return;
+    bInst.classList.add('ukryty');
+    zachetaInstalacji.prompt();
+    const { outcome } = await zachetaInstalacji.userChoice;
+    zachetaInstalacji = null;
+    if (outcome !== 'accepted') bInst.classList.remove('ukryty');
+  };
+  addEventListener('appinstalled', () => {
+    bInst.classList.add('ukryty');
+    komunikat('ZAINSTALOWANA', 'Maciek siedzi teraz na pulpicie', 2400);
+  });
+  /* iOS nie ma beforeinstallprompt — podpowiedz ręcznie */
+  const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const wStandalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if (iOS && !wStandalone) {
+    bInst.classList.remove('ukryty');
+    bInst.textContent = '⤓ JAK ZAINSTALOWAĆ';
+    bInst.onclick = () => komunikat('NA iPHONIE',
+      'Udostępnij ⤴ → „Dodaj do ekranu początkowego”', 4200);
+  }
+})();
+</script>
+</body>
+</html>
