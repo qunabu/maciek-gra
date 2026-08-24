@@ -10,7 +10,7 @@
    • nowy worker NIE wchodzi na siłę — strona pyta gracza „nowa wersja,
      odświeżyć?" i dopiero wtedy woła skipWaiting.                           */
 
-const WERSJA = '1.0.1';
+const WERSJA = '1.0.2';
 const CACHE  = 'maciek-nfz-' + WERSJA;
 
 /* to, co musi być dostępne offline od pierwszego uruchomienia */

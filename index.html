@@ -1444,7 +1444,7 @@ addEventListener('keydown', function raz() {
 (() => {
   const banner = $('#nowaWersja');
   const bInst = $('#bInstaluj'), bSprawdz = $('#bSprawdz');
-  let rejestracja = null, czekajacy = null, przeladowuje = false;
+  let rejestracja = null, czekajacy = null, przeladowuje = false, wersjaTeraz = null;
 
   function pokazBanner(sw) {
     czekajacy = sw;
@@ -1453,7 +1453,7 @@ addEventListener('keydown', function raz() {
   $('#bOdswiez').onclick = () => {
     banner.classList.add('ukryty');
     if (czekajacy) czekajacy.postMessage('wskakuj');
-    else location.reload();
+    else { przeladowuje = true; location.reload(); }
   };
   $('#bPozniej').onclick = () => banner.classList.add('ukryty');
 
@@ -1470,8 +1470,9 @@ addEventListener('keydown', function raz() {
   });
   navigator.serviceWorker.addEventListener('message', e => {
     const d = e.data || {};
-    if (d.typ === 'wersja') $('#wNumer').textContent = d.wersja;
+    if (d.typ === 'wersja') { wersjaTeraz = d.wersja; $('#wNumer').textContent = d.wersja; }
     if (d.typ === 'offline-gotowe') {
+      wersjaTeraz = d.wersja;
       $('#wNumer').textContent = d.wersja;
       $('#stanOffline').textContent = 'działa offline ✓';
     }
@@ -1490,7 +1491,8 @@ addEventListener('keydown', function raz() {
 
   addEventListener('load', async () => {
     try {
-      rejestracja = await navigator.serviceWorker.register('sw.js', { scope: './' });
+      rejestracja = await navigator.serviceWorker.register('sw.js',
+        { scope: './', updateViaCache: 'none' });
       pilnujAktualizacji(rejestracja);
       if (navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage('wersja');
@@ -1506,16 +1508,28 @@ addEventListener('keydown', function raz() {
     }
   });
 
+  /* wersja leżąca na serwerze — czytana z pominięciem cache HTTP */
+  async function wersjaNaSerwerze() {
+    const odp = await fetch('sw.js?t=' + Date.now(), { cache: 'no-store' });
+    const txt = await odp.text();
+    const m = txt.match(/WERSJA\s*=\s*'([^']+)'/);
+    return m ? m[1] : null;
+  }
+
   bSprawdz.onclick = async () => {
     bSprawdz.textContent = '↻ SPRAWDZAM…';
     try {
+      const naSerwerze = await wersjaNaSerwerze();
       if (rejestracja) await rejestracja.update();
-      await new Promise(r => setTimeout(r, 900));
-      if (banner.classList.contains('ukryty')) {
+      await new Promise(r => setTimeout(r, 1200));
+      const jestNowa = !banner.classList.contains('ukryty')
+        || (naSerwerze && wersjaTeraz && naSerwerze !== wersjaTeraz);
+      if (jestNowa) {
+        pokazBanner(rejestracja && rejestracja.waiting);
+        bSprawdz.textContent = '↻ SPRAWDŹ WERSJĘ';
+      } else {
         bSprawdz.textContent = '✓ MASZ NAJNOWSZĄ';
         setTimeout(() => bSprawdz.textContent = '↻ SPRAWDŹ WERSJĘ', 2200);
-      } else {
-        bSprawdz.textContent = '↻ SPRAWDŹ WERSJĘ';
       }
     } catch (e) {
       bSprawdz.textContent = '✕ BRAK SIECI';
