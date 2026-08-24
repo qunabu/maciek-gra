@@ -93,15 +93,49 @@
     font-size:clamp(12px,2.6vw,16px);opacity:0;transition:opacity .25s}
   #dymek b{color:var(--blekit)}
 
+  /* --- kontrolki dotykowe --- */
   #dotyk{position:fixed;inset:auto 0 0 0;z-index:8;display:none;
-    padding:0 12px calc(12px + env(safe-area-inset-bottom));
-    justify-content:space-between;align-items:flex-end;pointer-events:none}
-  #dotyk .grupa{display:flex;gap:10px;pointer-events:auto}
-  #dotyk b{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;
-    border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.09);
-    font-size:22px;color:#fff;backdrop-filter:blur(6px)}
-  #dotyk b.ogien{border-color:var(--neon);background:rgba(255,62,165,.22);width:74px;height:74px}
-  body.dotyk #dotyk{display:flex}
+    padding:0 max(14px,env(safe-area-inset-left)) calc(16px + env(safe-area-inset-bottom))
+            max(14px,env(safe-area-inset-right));
+    justify-content:space-between;align-items:flex-end;pointer-events:none;
+    touch-action:none}
+  #dotyk .grupa{display:flex;gap:14px;align-items:flex-end;pointer-events:auto}
+  #dotyk b{width:74px;height:74px;border-radius:50%;display:grid;place-items:center;
+    border:2px solid rgba(255,255,255,.34);background:rgba(255,255,255,.10);
+    font-size:26px;line-height:1;color:#fff;backdrop-filter:blur(8px);
+    transition:transform .06s,background .06s;user-select:none;-webkit-user-select:none}
+  #dotyk b.wcisniety{transform:scale(.9);background:rgba(255,255,255,.26)}
+  #dotyk b.ogien{border-color:var(--neon);background:rgba(255,62,165,.24);
+    width:94px;height:94px;font-size:30px;
+    box-shadow:0 0 22px rgba(255,62,165,.35)}
+  #dotyk b.ogien.wcisniety{background:rgba(255,62,165,.5)}
+  #dotyk b.ciag{border-color:var(--zolty);background:rgba(255,210,63,.2);width:82px;height:82px}
+  #dotyk b.maly{width:58px;height:58px;font-size:19px;opacity:.75}
+  /* kontrolki tylko w trakcie gry */
+  body.dotyk.wgrze #dotyk{display:flex}
+
+  /* pauza i pełny ekran w narożniku — też pod palec */
+  #naroznik{position:fixed;z-index:9;display:none;gap:9px;
+    top:calc(8px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
+    pointer-events:auto}
+  #naroznik b{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;
+    border:1px solid rgba(255,255,255,.26);background:rgba(10,8,22,.6);
+    font-size:17px;color:#fff;backdrop-filter:blur(8px)}
+  body.dotyk.wgrze #naroznik{display:flex}
+  body.dotyk #hud{font-size:12px}
+  /* w poziomie na telefonie HUD nie może wchodzić na kontrolki */
+  @media (max-height:520px){
+    #dotyk b{width:62px;height:62px;font-size:22px}
+    #dotyk b.ogien{width:78px;height:78px;font-size:26px}
+    #dotyk b.ciag{width:68px;height:68px}
+    #dotyk b.maly{width:50px;height:50px;font-size:16px}
+  }
+  /* prośba o obrót telefonu */
+  #obrot{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;
+    align-items:center;justify-content:center;gap:16px;text-align:center;padding:28px;
+    background:rgba(5,6,15,.94);color:var(--mgla);font-size:15px;letter-spacing:.08em}
+  #obrot span{font-size:46px}
+  body.dotyk.wgrze.pionowo #obrot{display:flex}
 
   .stopka{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom));left:0;right:0;
     text-align:center;font-size:11px;color:rgba(255,255,255,.28);letter-spacing:.1em;z-index:11}
@@ -163,8 +197,20 @@
 
 <div id="dotyk">
   <div class="grupa"><b id="bLewo">◀</b><b id="bPrawo">▶</b></div>
-  <div class="grupa"><b id="bHiper">⇢</b><b id="bCiag">▲</b><b id="bOgien" class="ogien">●</b></div>
+  <div class="grupa">
+    <b id="bHiper" class="maly">⇢</b>
+    <b id="bCiag" class="ciag">▲</b>
+    <b id="bOgien" class="ogien">▬</b>
+  </div>
 </div>
+
+<div id="naroznik">
+  <b id="bPauzaDotyk">⏸</b>
+  <b id="bFullDotyk">⛶</b>
+  <b id="bDzwiekDotyk">♪</b>
+</div>
+
+<div id="obrot"><span>⟳</span>Obróć telefon poziomo —<br>w kosmosie jest szeroko.</div>
 
 <div class="warstwa" id="ekranMenu">
   <h1>MACIEK<br>KONTRA NFZ<small>kosmiczne country · edycja poradniana</small></h1>
@@ -195,7 +241,7 @@
     <button class="gra drugi" id="bSprawdz">↻ SPRAWDŹ WERSJĘ</button>
   </div>
   <div id="wersjaTxt">wersja <span id="wNumer">—</span> · <span id="stanOffline"></span></div>
-  <div class="stopka">strzałkami się gra, spacją się leczy</div>
+  <div class="stopka">strzałkami się gra, spacją się leczy · na telefonie START włącza pełny ekran</div>
 </div>
 
 <div id="nowaWersja" class="ukryty">
@@ -245,14 +291,16 @@ przeskaluj();
 const A = (() => {
   const SFX = ['sfx_strzal','sfx_bum','sfx_drukarka','sfx_monitor','sfx_paragraf',
                'sfx_pacjent','sfx_kara','sfx_boss','sfx_hit','sfx_smierc','sfx_hiper',
-               'sfx_naprawa','sfx_klucz','sfx_toner'];
+               'sfx_naprawa','sfx_klucz','sfx_toner','sfx_telefon','sfx_akordeon'];
   const GLOS = ['m_start','m_strzal1','m_strzal2','m_strzal3','m_drukarka','m_monitor',
                 'm_paragraf','m_babcia','m_debil','m_pacjent','m_smierc','m_koniec','m_boss',
                 'm_zycie','m_kara','m_wygrana','m_low','m_naprawa','m_toner','m_zepsuta',
                 'u_fala','u_ostrzez','u_kara','u_kontrola','u_boss','u_koniec','u_ratio_ok','u_bonus','u_naprawa',
                 'k_wejscie','k_atak1','k_atak2','k_atak3','k_atak4','k_trafiona','k_smierc','k_wygrana',
                 'b_spoznil','b_drukarka','b_przycisk','b_czekac','b_prywatnie','b_kolejka',
-                'b_internet','b_skladki','b_nawszystko','b_lekarz','b_monitor','b_stopa'];
+                'b_internet','b_skladki','b_nawszystko','b_lekarz','b_monitor','b_stopa',
+                'a_telefon','a_gdzie','a_100ms','a_oddzwon','a_zajete','a_nieodbiera',
+                'mt_1','mt_2','mt_3','mt_4'];
   const MUZ = ['muz_menu','muz_gra','muz_boss','muz_koniec','muz_wygrana'];
 
   const pule = {}, glosy = {}, muzyki = {};
@@ -427,16 +475,26 @@ let maciekOK = false;
 maciekImg.onload = () => maciekOK = true;
 maciekImg.src = 'maciek_ship.png';
 
-/* Roszczeniowe baby ze zdjęć. Pliki są w .gitignore — na publicznej wersji
-   ich nie ma i gra po cichu wraca do rysowanych wariantów. */
+/* Twarze wrogów ze zdjęć. Gdyby plik nie doszedł, gra po cichu wraca do
+   rysowanego wariantu — nic się nie wywala. */
 const babyImg = [];
-['baba1_sprite.png', 'baba2_sprite.png', 'baba3_sprite.png'].forEach((plik, i) => {
+const LICZBA_BAB = 6;
+for (let i = 1; i <= LICZBA_BAB; i++) {
   const im = new Image();
-  im.onload = () => { babyImg[i] = im; };
+  im.onload = () => { babyImg[i - 1] = im; };
   im.onerror = () => {};
-  im.src = plik;
-});
-const LICZBA_BAB = 3;                        // tyle rysowanych wariantów zapasowych
+  im.src = 'baba' + i + '_sprite.png';
+}
+/* Artur. Dzwoni. Zawsze dzwoni. */
+let arturImg = null, mateuszImg = null;
+{
+  const a = new Image();
+  a.onload = () => { arturImg = a; }; a.onerror = () => {};
+  a.src = 'artur_sprite.png';
+  const m = new Image();
+  m.onload = () => { mateuszImg = m; }; m.onerror = () => {};
+  m.src = 'mateusz_sprite.png';
+}
 
 /* ─────────────────────────  GWIAZDY + HORYZONT  ───────────────────────── */
 let gwiazdy = [];
@@ -464,8 +522,14 @@ const TYPY = {
   debil:    { nazwa: 'DEBIL Z ULICY',  kolor: '#ffd23f', pkt: 35, sfx: 'sfx_bum',
               vo: 'm_debil',    waga: 1.8, predkosc: 1.35 },
   kontrola: { nazwa: 'KONTROLA NFZ',   kolor: '#ff4d4d', pkt: 70, sfx: 'sfx_kara',
-              vo: 'u_kontrola', waga: 1.0, predkosc: 1.6 }
+              vo: 'u_kontrola', waga: 1.0, predkosc: 1.6 },
+  artur:    { nazwa: 'ARTUR DZWONI',   kolor: '#a8e6ff', pkt: 55, sfx: 'sfx_telefon',
+              vo: 'a_gdzie',    waga: 1.1, predkosc: 1.45 },
+  mateusz:  { nazwa: 'MATEUSZ ŚPIEWA', kolor: '#ffcf7a', pkt: 130, sfx: 'sfx_akordeon',
+              vo: 'mt_4',       waga: 0,   predkosc: .5, niedzieli: true, hp: 6 }
 };
+/* typy rysowane jako twarz w kółku — te się nie kręcą, tylko kołyszą */
+const TYPY_TWARZE = new Set(['babcia', 'artur', 'mateusz']);
 const KWESTIE_BAB = [
   ['b_spoznil',    'Panie Maćku, znowu się pan spóźnił.'],
   ['b_drukarka',   'Panie Maćku, drukarka mi znowu nie działa.'],
@@ -481,13 +545,35 @@ const KWESTIE_BAB = [
   ['b_stopa',      'Panie Maćku, moja stopa też jest ważna.']
 ];
 
+const KWESTIE_ARTURA = [
+  ['a_telefon',    'Maciek, kurwa, czemu nie odebrałeś sekundę temu telefonu?'],
+  ['a_gdzie',      'Maciek, gdzie ty kurwa jesteś?'],
+  ['a_100ms',      'Maciej, kurwa, dzwoniłem do ciebie sto milisekund temu.'],
+  ['a_oddzwon',    'Maciek, oddzwoń kurwa natychmiast.'],
+  ['a_zajete',     'Maciek, ty masz zajęte od dwóch sekund. Co ty tam robisz?'],
+  ['a_nieodbiera', 'Maciek, ja dzwonię, a ty nic. Nic, kurwa.']
+];
+
+/* Cztery kawałki, żeby dymek trafiał w rytm. */
+const PIOSENKA = [
+  ['mt_1', 'Maciek chuj… wozi gnój…'],
+  ['mt_2', '…na gumowych taczkach…'],
+  ['mt_3', '…pije, pali, konia wali…'],
+  ['mt_4', '…w dupie ma robaczka!']
+];
+
+const GADAJACY = { babcia: KWESTIE_BAB, artur: KWESTIE_ARTURA };
+
 const KLUCZE_TYPOW = Object.keys(TYPY);
 function losujTyp(fala) {
   const pula = [];
   for (const k of KLUCZE_TYPOW) {
     if (k === 'kontrola' && fala < 3) continue;
+    if (k === 'artur' && fala < 2) continue;
+    if (k === 'mateusz') continue;      // Mateusz wchodzi osobno, nie z losowania
     let w = TYPY[k].waga;
     if (k === 'kontrola') w = .6 + fala * .12;
+    if (k === 'artur') w = .8 + fala * .07;
     for (let i = 0; i < Math.round(w * 10); i++) pula.push(k);
   }
   return wybierz(pula);
@@ -550,10 +636,10 @@ function nowaSkala(typ, rozmiar, x, y, fala) {
     vx: Math.cos(kat) * predkosc * 60,
     vy: Math.sin(kat) * predkosc * 60,
     obrot: los(0, TAU),
-    obrotV: typ === 'babcia' ? los(-.22, .22) : los(-1.4, 1.4),
+    obrotV: TYPY_TWARZE.has(typ) ? los(-.22, .22) : los(-1.4, 1.4),
     wariant: losInt(0, LICZBA_BAB - 1),
-    dymek: null, dymekT: 0,
-    hp: rozmiar === 3 ? 2 : 1,
+    dymek: null, dymekT: 0, spiewIdx: 0, spiewCd: los(.8, 2.6),
+    hp: t.hp !== undefined ? t.hp : (rozmiar === 3 ? 2 : 1),
     blysk: 0,
     ziarno: los(0, 100)
   };
@@ -620,6 +706,9 @@ function startFali() {
     const ile = Math.min(4 + Math.floor(G.fala * 1.25), 13);
     for (let i = 0; i < ile; i++) {
       G.skaly.push(nowaSkala(losujTyp(G.fala), 3, undefined, undefined, G.fala));
+    }
+    if (G.fala >= 3 && Math.random() < .6) {
+      G.skaly.push(nowaSkala('mateusz', 3, undefined, undefined, G.fala));
     }
     komunikat('FALA ' + G.fala, G.karaFale > 0
       ? 'kara NFZ aktywna · zostały ' + G.karaFale
@@ -701,21 +790,87 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => { if (MAPA[e.code]) { K[MAPA[e.code]] = false; e.preventDefault(); } });
 addEventListener('blur', () => { for (const k in K) K[k] = false; });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && G && G.stan === 'gra') pauza();
+});
 
-/* dotyk */
-if (matchMedia('(pointer: coarse)').matches) document.body.classList.add('dotyk');
-function przycisk(id, klucz) {
+/* ── DOTYK ────────────────────────────────────────────────────────────
+   Każdy przycisk łapie własne pointerdown/up z setPointerCapture, więc
+   dwa palce naraz (obrót + ogień) działają bez cudów, a zjechanie palcem
+   z przycisku nie zostawia klawisza wciśniętego na zawsze.            */
+const dotykowy = matchMedia('(pointer: coarse)').matches
+              || navigator.maxTouchPoints > 0;
+if (dotykowy) document.body.classList.add('dotyk');
+
+function przycisk(id, klucz, opcje) {
   const el = document.getElementById(id);
-  const on = e => { e.preventDefault(); K[klucz] = true; };
-  const off = e => { e.preventDefault(); K[klucz] = false; };
-  el.addEventListener('touchstart', on, { passive: false });
-  el.addEventListener('touchend', off, { passive: false });
-  el.addEventListener('touchcancel', off, { passive: false });
-  el.addEventListener('mousedown', on);
-  addEventListener('mouseup', off);
+  if (!el) return;
+  const o = opcje || {};
+  const wcisnij = e => {
+    e.preventDefault();
+    if (e.pointerId !== undefined && el.setPointerCapture) {
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
+    }
+    el.classList.add('wcisniety');
+    if (o.raz) { o.raz(); return; }
+    K[klucz] = true;
+    if (o.wibruj && navigator.vibrate) navigator.vibrate(8);
+  };
+  const pusc = e => {
+    if (e) e.preventDefault();
+    el.classList.remove('wcisniety');
+    if (!o.raz) K[klucz] = false;
+  };
+  el.addEventListener('pointerdown', wcisnij);
+  el.addEventListener('pointerup', pusc);
+  el.addEventListener('pointercancel', pusc);
+  el.addEventListener('lostpointercapture', pusc);
+  el.addEventListener('contextmenu', e => e.preventDefault());
 }
-przycisk('bLewo', 'lewo'); przycisk('bPrawo', 'prawo');
-przycisk('bCiag', 'ciag'); przycisk('bOgien', 'ogien'); przycisk('bHiper', 'hiper');
+przycisk('bLewo', 'lewo'); przycisk('bPrawo', 'prawo'); przycisk('bCiag', 'ciag');
+przycisk('bOgien', 'ogien', { wibruj: true });
+przycisk('bHiper', 'hiper', { wibruj: true });
+
+/* ── PEŁNY EKRAN ──────────────────────────────────────────────────────
+   Musi wyjść z gestu użytkownika, więc wołamy to z kliknięcia START.
+   iOS Safari nie da fullscreena zwykłemu elementowi — tam pełny ekran
+   daje dopiero zainstalowanie PWA (display: fullscreen w manifeście). */
+async function naPelnyEkran() {
+  const el = document.documentElement;
+  try {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      if (el.requestFullscreen) await el.requestFullscreen({ navigationUI: 'hide' });
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    }
+  } catch (e) {}
+  try {
+    if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
+  } catch (e) {}
+  setTimeout(przeskaluj, 260);
+}
+function zPelnegoEkranu() {
+  try {
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+    else if (document.webkitFullscreenElement && document.webkitExitFullscreen) document.webkitExitFullscreen();
+  } catch (e) {}
+}
+przycisk('bFullDotyk', null, { raz: () => {
+  if (document.fullscreenElement || document.webkitFullscreenElement) zPelnegoEkranu();
+  else naPelnyEkran();
+} });
+przycisk('bPauzaDotyk', null, { raz: () => { if (G) pauza(); } });
+przycisk('bDzwiekDotyk', null, { raz: () => {
+  const on = A.przelacz();
+  document.getElementById('bDzwiekDotyk').textContent = on ? '♪' : '✕';
+} });
+
+/* pion/poziom — w pionie gra jest nie do grania, więc prosimy o obrót */
+function sprawdzOrientacje() {
+  document.body.classList.toggle('pionowo', innerHeight > innerWidth * 1.05);
+}
+addEventListener('resize', sprawdzOrientacje);
+addEventListener('orientationchange', () => setTimeout(sprawdzOrientacje, 120));
+sprawdzOrientacje();
 
 /* ─────────────────────────  LOGIKA  ───────────────────────── */
 function zawin(o, margines) {
@@ -782,7 +937,7 @@ function rozbij(s, i) {
     + (G.combo > 2 ? ' ×' + G.combo : ''), t.kolor);
 
   if (Math.random() < .12) A.vo(t.vo, 1);
-  if (s.rozmiar > 1) {
+  if (s.rozmiar > 1 && !t.niedzieli) {
     for (let k = 0; k < 2; k++) {
       const n = nowaSkala(s.typ, s.rozmiar - 1, s.x, s.y, G.fala);
       const kat = los(0, TAU), v = los(45, 110);
@@ -1022,12 +1177,15 @@ function aktualizuj(dt) {
     const s = G.skaly[i];
     s.x += s.vx * dt; s.y += s.vy * dt; s.obrot += s.obrotV * dt;
     s.blysk = Math.max(0, s.blysk - dt * 5);
-    /* kontrola NFZ leci prosto na gracza */
-    if (s.typ === 'kontrola' && g.zywy) {
+    /* kontrola NFZ i Artur lecą prosto na gracza — Artur trochę wolniej,
+       ale nie odpuszcza nigdy */
+    if ((s.typ === 'kontrola' || s.typ === 'artur') && g.zywy) {
+      const przyciag = s.typ === 'kontrola' ? 42 : 30;
+      const limit = s.typ === 'kontrola' ? 165 : 138;
       const kat = Math.atan2(g.y - s.y, g.x - s.x);
-      s.vx += Math.cos(kat) * 42 * dt; s.vy += Math.sin(kat) * 42 * dt;
+      s.vx += Math.cos(kat) * przyciag * dt; s.vy += Math.sin(kat) * przyciag * dt;
       const v = Math.hypot(s.vx, s.vy);
-      if (v > 165) { s.vx = s.vx / v * 165; s.vy = s.vy / v * 165; }
+      if (v > limit) { s.vx = s.vx / v * limit; s.vy = s.vy / v * limit; }
     }
     zawin(s);
     if (g.zywy && G.nietykalnosc <= 0 && blisko(s, g, -19)) obrywa();
@@ -1088,14 +1246,34 @@ function aktualizuj(dt) {
 
   /* --- roszczeniowe baby mają coś do powiedzenia --- */
   G.gadanieCd -= dt;
-  for (const b of G.skaly) if (b.dymekT > 0) b.dymekT -= dt;
+  for (const b of G.skaly) {
+    if (b.dymekT > 0) b.dymekT -= dt;
+    /* Mateusz leci zwrotkę po zwrotce, niezależnie od reszty gadania */
+    if (b.typ === 'mateusz') {
+      b.spiewCd -= dt;
+      if (b.spiewCd <= 0) {
+        if (b.spiewIdx < PIOSENKA.length) {
+          const kw = PIOSENKA[b.spiewIdx];
+          if (b.spiewIdx === 0) A.sfx('sfx_akordeon', .35);
+          b.dymek = kw[1]; b.dymekT = 2.3;
+          A.vo(kw[0], 2);
+          b.spiewIdx++;
+          b.spiewCd = 2.0;
+        } else {
+          b.spiewIdx = 0;
+          b.spiewCd = los(5, 9);        // przerwa między zwrotkami
+        }
+      }
+    }
+  }
   if (G.gadanieCd <= 0) {
-    const baby = G.skaly.filter(b => b.typ === 'babcia' && b.dymekT <= 0);
-    if (baby.length) {
-      const b = wybierz(baby);
-      const kw = wybierz(KWESTIE_BAB);
-      b.dymek = kw[1]; b.dymekT = 3.8;
-      A.vo(kw[0], 2);
+    const gadacze = G.skaly.filter(b => GADAJACY[b.typ] && b.dymekT <= 0);
+    if (gadacze.length) {
+      const b = wybierz(gadacze);
+      const kw = wybierz(GADAJACY[b.typ]);
+      b.dymek = kw[1]; b.dymekT = 4.2;
+      if (b.typ === 'artur') A.sfx('sfx_telefon', .4);
+      A.vo(kw[0], b.typ === 'artur' ? 3 : 2);
       G.gadanieCd = los(4.5, 8);
     } else {
       G.gadanieCd = 1.2;
@@ -1342,7 +1520,7 @@ function rysujSkale(s) {
   ctx.translate(s.x, s.y);
   /* baby to twarze — kręcenie nimi jak kamieniem wygląda źle, więc się
      tylko kołyszą; reszta problemów wiruje normalnie */
-  ctx.rotate(s.typ === 'babcia' ? Math.sin(G.czas * 1.6 + s.ziarno) * .13 : s.obrot);
+  ctx.rotate(TYPY_TWARZE.has(s.typ) ? Math.sin(G.czas * 1.6 + s.ziarno) * .13 : s.obrot);
   const r = s.r;
   if (s.blysk > 0) { ctx.shadowColor = '#fff'; ctx.shadowBlur = 22 * s.blysk; }
 
@@ -1461,6 +1639,95 @@ function rysujSkale(s) {
     ctx.beginPath(); ctx.arc(0, r * .22, r * .3, .15, Math.PI - .15); ctx.stroke();
     ctx.fillStyle = '#fff';
     ctx.fillRect(-r * .12, r * .3, r * .1, r * .16);
+  } else if (s.typ === 'mateusz') {
+    const spiewa = s.dymekT > 0;
+    const puls = .5 + .5 * Math.sin(G.czas * 5 + s.ziarno);
+    ctx.save();
+    ctx.shadowColor = '#ffcf7a'; ctx.shadowBlur = 12 + (spiewa ? 20 * puls : 4);
+    ctx.beginPath(); ctx.arc(0, 0, r * .95, 0, TAU);
+    ctx.fillStyle = '#2a1d10'; ctx.fill();
+    ctx.shadowBlur = 0;
+    if (mateuszImg) {
+      ctx.save();
+      ctx.beginPath(); ctx.arc(0, 0, r * .87, 0, TAU); ctx.clip();
+      const d = r * 2.2, w = d * (mateuszImg.width / mateuszImg.height);
+      ctx.drawImage(mateuszImg, -w / 2, -d * .44, w, d);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#e8d3b8';
+      ctx.beginPath(); ctx.arc(0, 0, r * .87, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#3a2a1a';
+      ctx.beginPath(); ctx.arc(-r * .2, -r * .05, r * .07, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(r * .2, -r * .05, r * .07, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, r * .3, r * .16, r * .2, 0, 0, TAU); ctx.fill();
+    }
+    ctx.strokeStyle = '#ffcf7a';
+    ctx.lineWidth = Math.max(2, r * .08 * (spiewa ? .7 + puls * .7 : .7));
+    ctx.beginPath(); ctx.arc(0, 0, r * .91, 0, TAU); ctx.stroke();
+
+    /* nutki lecące w górę, kiedy leci zwrotka */
+    if (spiewa) {
+      ctx.fillStyle = '#ffcf7a';
+      ctx.font = 'bold ' + Math.round(r * .42) + 'px Georgia,serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (let i = 0; i < 3; i++) {
+        const f = (G.czas * .9 + i * .33) % 1;
+        ctx.globalAlpha = (1 - f) * .9;
+        ctx.fillText(i % 2 ? '♪' : '♫',
+          Math.sin((G.czas + i) * 2.4) * r * .55 - r * .9,
+          r * .2 - f * r * 1.5);
+      }
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+    ctx.restore();
+    rysujPodpisSkaly(s);
+    rysujDymekBaby(s);
+    return;
+  } else if (s.typ === 'artur') {
+    /* dzwoni — kółko pulsuje na zielono jak nieodebrane połączenie */
+    const puls = .5 + .5 * Math.sin(G.czas * 7 + s.ziarno);
+    ctx.save();
+    ctx.shadowColor = '#43ffa1'; ctx.shadowBlur = 14 + 16 * puls;
+    ctx.beginPath(); ctx.arc(0, 0, r * .92, 0, TAU);
+    ctx.fillStyle = '#0e2a22'; ctx.fill();
+    ctx.shadowBlur = 0;
+    if (arturImg) {
+      ctx.save();
+      ctx.beginPath(); ctx.arc(0, 0, r * .84, 0, TAU); ctx.clip();
+      const d = r * 2.1, w = d * (arturImg.width / arturImg.height);
+      ctx.drawImage(arturImg, -w / 2, -d * .46, w, d);
+      ctx.restore();
+    } else {
+      /* zapas: kaptur i para oczu */
+      ctx.fillStyle = '#20242c';
+      ctx.beginPath(); ctx.arc(0, 0, r * .84, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#cfd6dd';
+      ctx.beginPath(); ctx.ellipse(0, r * .12, r * .42, r * .52, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#1a1a22';
+      ctx.beginPath(); ctx.arc(-r * .17, 0, r * .07, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(r * .17, 0, r * .07, 0, TAU); ctx.fill();
+    }
+    ctx.strokeStyle = '#43ffa1'; ctx.lineWidth = Math.max(2, r * .08 * (.6 + puls * .8));
+    ctx.beginPath(); ctx.arc(0, 0, r * .88, 0, TAU); ctx.stroke();
+
+    /* telefon dygający przy uchu */
+    ctx.save();
+    ctx.translate(r * .74, -r * .5);
+    ctx.rotate(.35 + Math.sin(G.czas * 22 + s.ziarno) * .22 * puls);
+    ctx.fillStyle = '#43ffa1'; ctx.strokeStyle = '#0b2b20'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(-r * .13, -r * .22, r * .26, r * .44, r * .06)
+                  : ctx.rect(-r * .13, -r * .22, r * .26, r * .44);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#0b2b20';
+    ctx.fillRect(-r * .08, -r * .16, r * .16, r * .24);
+    ctx.restore();          // telefon
+    ctx.restore();          // gałąź Artura
+    ctx.restore();          // save z początku rysujSkale
+    rysujPodpisSkaly(s);
+    rysujDymekBaby(s);
+    return;
   } else if (s.typ === 'kontrola') {
     /* teczka z napisem NFZ, migająca */
     const puls = .6 + .4 * Math.sin(G.czas * 8 + s.ziarno);
@@ -1478,7 +1745,7 @@ function rysujSkale(s) {
   ctx.restore();
 
   rysujPodpisSkaly(s);
-  if (s.typ === 'babcia') rysujDymekBaby(s);
+  if (TYPY_TWARZE.has(s.typ)) rysujDymekBaby(s);
 }
 
 function rysujPodpisSkaly(s) {
@@ -1750,6 +2017,10 @@ function rysujBossa() {
 }
 
 function rysuj(t) {
+  /* Gdyby któryś rysunek zgubił restore, klatka i tak startuje od zera —
+     inaczej przesunięcie narasta i cała gra ucieka poza ekran. */
+  ctx.setTransform(S, 0, 0, S, 0, 0);
+  ctx.globalAlpha = 1;
   ctx.save();
   if (G && G.trzask > 0) {
     const s = G.trzask * 16;
@@ -1805,6 +2076,9 @@ requestAnimationFrame(klatka);
 /* ─────────────────────────  EKRANY  ───────────────────────── */
 function start() {
   A.odblokuj();
+  naPelnyEkran();
+  document.body.classList.add('wgrze');
+  sprawdzOrientacje();
   $('#ekranMenu').classList.add('ukryty');
   $('#ekranKoniec').classList.add('ukryty');
   $('#ekranPauza').classList.add('ukryty');
@@ -1815,8 +2089,15 @@ function start() {
 }
 
 function pauza() {
-  if (G.stan === 'gra') { G.stan = 'pauza'; A.silnik(0); $('#ekranPauza').classList.remove('ukryty'); }
-  else { G.stan = 'gra'; ostatni = performance.now(); $('#ekranPauza').classList.add('ukryty'); }
+  if (G.stan === 'gra') {
+    G.stan = 'pauza'; A.silnik(0);
+    document.body.classList.remove('wgrze');
+    $('#ekranPauza').classList.remove('ukryty');
+  } else {
+    G.stan = 'gra'; ostatni = performance.now();
+    document.body.classList.add('wgrze');
+    $('#ekranPauza').classList.add('ukryty');
+  }
 }
 
 function koniecGry() {
@@ -1827,6 +2108,7 @@ function koniecGry() {
   setTimeout(() => A.vo('m_koniec', 5), 3600);
   $('#hud').classList.add('ukryty');
   $('#bossPasek').classList.add('ukryty');
+  document.body.classList.remove('wgrze');
   const celnosc = G.strzaly ? Math.round(G.trafienia / G.strzaly * 100) + '%' : '—';
   const rekord = Math.max(G.punkty, +(localStorage.getItem('maciek_rekord') || 0));
   localStorage.setItem('maciek_rekord', rekord);

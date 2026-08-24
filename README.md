@@ -17,6 +17,8 @@ roszczeniowych pacjentów i debili z ulicy. Mega bos: **ciocia Kasia**.
 | **ROSZCZENIOWA** | szybka, wredna, co kilka sekund któraś rzuca pretensją („Panie Maćku, ten przycisk to trochę za mały") — 12 kwestii z głosem |
 | **DEBIL Z ULICY** | jeszcze szybszy |
 | **KONTROLA NFZ** | czerwona teczka, **namierza cię i leci prosto na ciebie** |
+| **ARTUR DZWONI** | zielone pulsujące kółko z telefonem, też cię namierza i nie odpuszcza. „Maciek, kurwa, czemu nie odebrałeś sekundę temu telefonu?" |
+| **MATEUSZ ŚPIEWA** | wolny, gruby na 6 trafień, nie rozpada się na mniejsze. Leci zwrotkę po zwrotce, akordeon i nutki. Wchodzi raz na falę od trzeciej |
 | 💚 **PIERWSZORAZOWY** | zielone serce — **łapiesz, nie strzelasz** |
 | 💛 **kontynuacja** | żółte serce — przylatuje samo i psuje ci wskaźnik |
 | 🔧 **DRUKARKA DO NAPRAWY** | zostaje po rozbitej drukarce — **wleć i przytrzymaj** ~1,2 s, dostajesz punkty i **TONER 3000** (podwójny ogień, 9 s). Strzelisz w nią — zepsuta na amen |
@@ -42,14 +44,15 @@ Co **piątą falę** schodzi mega bos. Trzy wzory ataku (seria decyzji w ciebie,
 wachlarz paragrafów, dorzucanie problemów), gada po drodze, im mniej HP tym
 bardziej wkurzona. Za ubicie: gruba premia i **jedno życie z powrotem**.
 
-### Roszczeniowe baby a zdjęcia
+### Twarze
 
-Warianty rysowane są w kodzie i to one lecą na GitHub Pages. Gra dodatkowo
-próbuje wczytać `baba1_sprite.png` … `baba3_sprite.png`; jeśli pliki leżą obok
-`index.html`, podmienia rysowane twarze na zdjęcia. Te pliki są w
-`.gitignore` — to zrzuty z social mediów z rozpoznawalnymi prywatnymi osobami
-i nie mają czego szukać na publicznej stronie. Lokalnie działają bez zmian
-w kodzie: wystarczy, że plik istnieje.
+Wrogowie z twarzą (`babcia`, `artur`, `mateusz`) rysują się jako zdjęcie
+w kółku, a jak plik nie dojdzie — jako rysowany zapas, żeby gra nigdy nie
+padła na brakującym obrazku. Do repo idą tylko gotowe `*_sprite.png`;
+materiał źródłowy siedzi w `.gitignore`.
+
+Sześć roszczeniowych bab pochodzi z obrazka generowanego przez AI
+(`grid_baby.png`, 3×2), pociętego na kafelki i przepuszczonego przez Vision.
 
 ## Sterowanie
 
@@ -62,7 +65,22 @@ w kodzie: wystarczy, że plik istnieje.
 | `M` | dźwięk on/off |
 | `P` | pauza |
 
-Na telefonie/tablecie pokazują się przyciski dotykowe.
+### Telefon
+
+`START` od razu wchodzi w pełny ekran i próbuje zablokować ekran w poziomie.
+Kontrolki dotykowe pokazują się tylko w trakcie gry:
+
+* lewy dół — obrót w lewo / w prawo,
+* prawy dół — hiperprzestrzeń, ciąg, wielki różowy ogień (z wibracją),
+* góra — pauza, pełny ekran, dźwięk.
+
+Obsługa idzie przez `pointerdown` + `setPointerCapture`, więc dwa palce naraz
+(obrót i ogień) działają, a zjechanie palcem z przycisku nie zostawia klawisza
+wciśniętego. W pionie gra prosi o obrócenie telefonu. Zejście karty w tło
+pauzuje grę.
+
+Na iPhonie `requestFullscreen` nie działa na zwykłym elemencie — tam pełny
+ekran daje dopiero zainstalowanie PWA (`display: fullscreen` w manifeście).
 
 ## PWA
 
@@ -82,8 +100,8 @@ Gra jest instalowalna i działa offline.
 
 ## Audio
 
-Wszystko wygenerowane przez ElevenLabs — 49 kwestii mówionych (Maciek, lektor
-NFZ, ciocia Kasia, roszczeniowe baby), 14 efektów i 5 kawałków muzyki w stylu
+Wszystko wygenerowane przez ElevenLabs — 59 kwestii mówionych (Maciek, lektor
+NFZ, ciocia Kasia, roszczeniowe baby, Artur, Mateusz), 16 efektów i 5 kawałków muzyki w stylu
 kosmicznego country (menu / gra / boss / koniec / wygrana).
 
 Dźwięk silnika **nie** jest plikiem — to brązowy szum przez filtr

@@ -10,7 +10,7 @@
    • nowy worker NIE wchodzi na siłę — strona pyta gracza „nowa wersja,
      odświeżyć?" i dopiero wtedy woła skipWaiting.                           */
 
-const WERSJA = '1.4.0';
+const WERSJA = '1.6.0';
 const CACHE  = 'maciek-nfz-' + WERSJA;
 
 /* to, co musi być dostępne offline od pierwszego uruchomienia */
@@ -19,6 +19,10 @@ const SZKIELET = [
   './index.html',
   './manifest.webmanifest',
   './maciek_ship.png',
+  './artur_sprite.png',
+  './mateusz_sprite.png',
+  './baba1_sprite.png', './baba2_sprite.png', './baba3_sprite.png',
+  './baba4_sprite.png', './baba5_sprite.png', './baba6_sprite.png',
   './ikona-192.png',
   './ikona-512.png',
   './ikona-maskowalna-512.png',
@@ -30,7 +34,7 @@ const SZKIELET = [
 const AUDIO = [
   'sfx_strzal','sfx_bum','sfx_drukarka','sfx_monitor','sfx_paragraf','sfx_pacjent',
   'sfx_kara','sfx_boss','sfx_hit','sfx_smierc','sfx_hiper',
-  'sfx_naprawa','sfx_klucz','sfx_toner',
+  'sfx_naprawa','sfx_klucz','sfx_toner','sfx_telefon','sfx_akordeon',
   'm_start','m_strzal1','m_strzal2','m_strzal3','m_drukarka','m_monitor','m_paragraf',
   'm_babcia','m_debil','m_pacjent','m_smierc','m_koniec','m_boss','m_zycie','m_kara',
   'm_wygrana','m_low','m_naprawa','m_toner','m_zepsuta',
@@ -38,6 +42,8 @@ const AUDIO = [
   'k_wejscie','k_atak1','k_atak2','k_atak3','k_atak4','k_trafiona','k_smierc','k_wygrana',
   'b_spoznil','b_drukarka','b_przycisk','b_czekac','b_prywatnie','b_kolejka',
   'b_internet','b_skladki','b_nawszystko','b_lekarz','b_monitor','b_stopa',
+  'a_telefon','a_gdzie','a_100ms','a_oddzwon','a_zajete','a_nieodbiera',
+  'mt_1','mt_2','mt_3','mt_4',
   'muz_menu','muz_gra','muz_boss','muz_koniec','muz_wygrana'
 ].map(n => './audio/' + n + '.mp3');
 

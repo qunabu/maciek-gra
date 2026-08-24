@@ -17,6 +17,8 @@ MACIEK = 'pNInz6obpgDQGcFmaJgB'   # Adam
 URZAD  = 'ErXwobaYiN019PkySvjV'   # Antoni - lektor NFZ
 KASIA  = '21m00Tcm4TlvDq8ikWAM'   # Rachel - ciocia Kasia
 BABA   = 'FGY2WhTYpPnrIDTdsKH5'   # Laura - roszczeniowe baby
+ARTUR  = 'VR6AewLTigWG4xSOukaG'   # Arnold - Artur z telefonem
+MATEUSZ= 'TxGEqnHWrfWFTfGW9XjX'   # Josh - Mateusz, śpiewa
 
 
 def poslij(url, dane, plik, proby=3):
@@ -127,6 +129,25 @@ BABY_LINIE = {
     'b_stopa':     'Panie Macku, moja stopa tez jest wazna.',
 }
 
+# --- Artur (dzwoni bez przerwy) --------------------------------------------
+ARTUR_LINIE = {
+    'a_telefon':  'Maciek, kurwa, czemu nie odebrales sekunde temu telefonu?',
+    'a_gdzie':    'Maciek, gdzie ty kurwa jestes?',
+    'a_100ms':    'Maciej, kurwa, dzwonilem do ciebie sto milisekund temu.',
+    'a_oddzwon':  'Maciek, oddzwon kurwa natychmiast.',
+    'a_zajete':   'Maciek, ty masz zajete od dwoch sekund. Co ty tam robisz?',
+    'a_nieodbiera':'Maciek, ja dzwonie, a ty nic. Nic, kurwa.',
+}
+
+# --- Mateusz (śpiewa) ------------------------------------------------------
+# Rymowanka idzie w czterech kawałkach, żeby dymki trafiały w rytm.
+MATEUSZ_LINIE = {
+    'mt_1': 'Maciek chuj... wozi gnoj...',
+    'mt_2': 'na gumowych taczkach...',
+    'mt_3': 'pije, pali, konia wali...',
+    'mt_4': 'w dupie ma robaczka!',
+}
+
 EFEKTY = {
     'sfx_strzal':   ('retro sci-fi laser pew, short punchy synth zap, arcade shooter', 0.5),
     'sfx_bum':      ('arcade explosion, crunchy retro boom with debris, short', 0.9),
@@ -143,6 +164,8 @@ EFEKTY = {
                      'satisfying success, short', 1.6),
     'sfx_klucz':    ('quick metallic wrench ratchet clicks, tightening a bolt, short', 0.8),
     'sfx_toner':    ('bright power-up shimmer, weapon upgrade, arcade, short', 1.0),
+    'sfx_telefon':  ('old mobile phone ringing insistently, vibrating buzz, short', 1.4),
+    'sfx_akordeon': ('single cheerful accordion chord stab, folk, short', 0.7),
 }
 
 MUZYKA = {
@@ -178,6 +201,14 @@ def main():
         for k, t in BABY_LINIE.items():
             wynik[k] = mowa(k + '.mp3', t, BABA, styl=0.65, stab=0.4)
             print('%-14s %s  "%s"' % (k, wynik[k], t), flush=True)
+        print('=== ARTUR ===', flush=True)
+        for k, t in ARTUR_LINIE.items():
+            wynik[k] = mowa(k + '.mp3', t, ARTUR, styl=0.75, stab=0.35)
+            print('%-14s %s  "%s"' % (k, wynik[k], t), flush=True)
+        print('=== MATEUSZ ===', flush=True)
+        for k, t in MATEUSZ_LINIE.items():
+            wynik[k] = mowa(k + '.mp3', t, MATEUSZ, styl=0.9, stab=0.25)
+            print('%-14s %s  "%s"' % (k, wynik[k], t), flush=True)
         print('=== CIOCIA KASIA ===', flush=True)
         for k, t in KASIA_LINIE.items():
             wynik[k] = mowa(k + '.mp3', t, KASIA, styl=0.6)
@@ -200,7 +231,7 @@ def main():
         stary = json.load(open(mp)).get('wynik', {})
     stary.update(wynik)
     json.dump({'maciek': MACIEK_LINIE, 'urzad': URZAD_LINIE, 'kasia': KASIA_LINIE,
-               'baby': BABY_LINIE,
+               'baby': BABY_LINIE, 'artur': ARTUR_LINIE, 'mateusz': MATEUSZ_LINIE,
                'wynik': stary}, open(mp, 'w'), ensure_ascii=False, indent=1)
     print('\nGOTOWE. plików: %d, błędów: %d' % (len(wynik), len(bledy)), flush=True)
     if bledy:

@@ -10,13 +10,19 @@ tools/gen_ikony
 maciek.jpg
 maciek_head.png
 
-# Roszczeniowe baby: zrzuty z social mediów z rozpoznawalnymi, prywatnymi
-# osobami. Zostają wyłącznie lokalnie — publiczna wersja gry ma w tym miejscu
-# rysowane warianty (patrz babyImg w index.html).
+# Materiał źródłowy do wycinanek — do repo idą tylko gotowe *_sprite.png.
+# Uwaga: baba1.jpeg / baba2.jpg / baba3.jpeg to zrzuty z social mediów
+# z rozpoznawalnymi prywatnymi osobami. Nie mają czego szukać w repo.
+# Twarze bab w grze pochodzą z grid_baby.png (obrazek generowany przez AI).
 baba*.jpg
 baba*.jpeg
 baba*_cut.png
-baba*_sprite.png
+grid_baby.png
+ChatGPT Image*.png
+artur.jpg
+artur_cut.png
+mateusz.jpeg
+mateusz_cut.png
 Bociuś*.jpg
 *.zip
 
