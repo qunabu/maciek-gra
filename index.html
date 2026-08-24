@@ -1127,27 +1127,34 @@ function rysujSkale(s) {
     ctx.fillText(':(', 0, r * .08);
     ctx.fillStyle = '#333b48'; ctx.fillRect(-r * .2, r * .56, r * .4, r * .2);
   } else if (s.typ === 'babcia') {
-    /* chustka + wściekła mina */
-    ctx.fillStyle = '#ffe0cc';
-    ctx.beginPath(); ctx.arc(0, 0, r * .72, 0, TAU); ctx.fill();
+    /* chustka jako pierścień dookoła twarzy + wściekła mina */
     ctx.fillStyle = '#e0457b';
+    ctx.beginPath(); ctx.arc(0, 0, r * .84, 0, TAU); ctx.fill();
+    /* węzeł pod brodą — jeszcze na chustce */
     ctx.beginPath();
-    ctx.arc(0, -r * .1, r * .78, Math.PI * 1.02, Math.PI * 1.98); ctx.closePath(); ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(-r * .74, -r * .05); ctx.quadraticCurveTo(0, r * .5, r * .74, -r * .05);
-    ctx.quadraticCurveTo(r * .4, r * .95, 0, r * .78);
-    ctx.quadraticCurveTo(-r * .4, r * .95, -r * .74, -r * .05);
+    ctx.moveTo(-r * .3, r * .62);
+    ctx.quadraticCurveTo(0, r * 1.12, r * .3, r * .62);
+    ctx.quadraticCurveTo(0, r * .74, -r * .3, r * .62);
     ctx.fill();
-    ctx.strokeStyle = '#3a2a2a'; ctx.lineWidth = Math.max(1.6, r * .06);
+    /* twarz w wycięciu chustki */
+    ctx.fillStyle = '#ffe0cc';
+    ctx.beginPath(); ctx.arc(0, r * .13, r * .6, 0, TAU); ctx.fill();
+    /* cień pod brzegiem chustki */
+    ctx.strokeStyle = 'rgba(150,30,70,.35)'; ctx.lineWidth = Math.max(1.5, r * .07);
+    ctx.beginPath(); ctx.arc(0, r * .13, r * .57, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+    /* brwi na kwintę */
+    ctx.strokeStyle = '#5a4436'; ctx.lineWidth = Math.max(1.6, r * .07);
     ctx.beginPath();
-    ctx.moveTo(-r * .44, -r * .28); ctx.lineTo(-r * .12, -r * .14);
-    ctx.moveTo(r * .44, -r * .28); ctx.lineTo(r * .12, -r * .14);
+    ctx.moveTo(-r * .42, -r * .16); ctx.lineTo(-r * .1, -r * .02);
+    ctx.moveTo(r * .42, -r * .16); ctx.lineTo(r * .1, -r * .02);
     ctx.stroke();
+    /* oczy */
     ctx.fillStyle = '#3a2a2a';
-    ctx.beginPath(); ctx.arc(-r * .26, -r * .02, r * .09, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(r * .26, -r * .02, r * .09, 0, TAU); ctx.fill();
-    ctx.strokeStyle = '#a03a5a';
-    ctx.beginPath(); ctx.arc(0, r * .52, r * .26, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
+    ctx.beginPath(); ctx.arc(-r * .24, r * .12, r * .08, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * .24, r * .12, r * .08, 0, TAU); ctx.fill();
+    /* podkówka zamiast ust */
+    ctx.strokeStyle = '#a83a5a'; ctx.lineWidth = Math.max(1.6, r * .06);
+    ctx.beginPath(); ctx.arc(0, r * .62, r * .22, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
   } else if (s.typ === 'debil') {
     ctx.fillStyle = '#ffdfae';
     ctx.beginPath(); ctx.arc(0, 0, r * .74, 0, TAU); ctx.fill();
