@@ -14,11 +14,12 @@ roszczeniowych pacjentów i debili z ulicy. Mega bos: **ciocia Kasia**.
 | **§ ROZPORZĄDZENIE** | stos papierów, rozpada się na mniejsze stosy |
 | **DRUKARKA** | zacięta, miga na czerwono |
 | **MONITOR** | padł, świeci `:(` |
-| **ROSZCZENIOWA** | szybka, wredna |
+| **ROSZCZENIOWA** | szybka, wredna, co kilka sekund któraś rzuca pretensją („Panie Maćku, ten przycisk to trochę za mały") — 12 kwestii z głosem |
 | **DEBIL Z ULICY** | jeszcze szybszy |
 | **KONTROLA NFZ** | czerwona teczka, **namierza cię i leci prosto na ciebie** |
 | 💚 **PIERWSZORAZOWY** | zielone serce — **łapiesz, nie strzelasz** |
 | 💛 **kontynuacja** | żółte serce — przylatuje samo i psuje ci wskaźnik |
+| 🔧 **DRUKARKA DO NAPRAWY** | zostaje po rozbitej drukarce — **wleć i przytrzymaj** ~1,2 s, dostajesz punkty i **TONER 3000** (podwójny ogień, 9 s). Strzelisz w nią — zepsuta na amen |
 
 ### Mechanika wskaźnika (czyli to, o co poszło)
 
@@ -40,6 +41,15 @@ Jak wskaźnik jest w normie — premia rosnąca z numerem fali.
 Co **piątą falę** schodzi mega bos. Trzy wzory ataku (seria decyzji w ciebie,
 wachlarz paragrafów, dorzucanie problemów), gada po drodze, im mniej HP tym
 bardziej wkurzona. Za ubicie: gruba premia i **jedno życie z powrotem**.
+
+### Roszczeniowe baby a zdjęcia
+
+Warianty rysowane są w kodzie i to one lecą na GitHub Pages. Gra dodatkowo
+próbuje wczytać `baba1_sprite.png` … `baba3_sprite.png`; jeśli pliki leżą obok
+`index.html`, podmienia rysowane twarze na zdjęcia. Te pliki są w
+`.gitignore` — to zrzuty z social mediów z rozpoznawalnymi prywatnymi osobami
+i nie mają czego szukać na publicznej stronie. Lokalnie działają bez zmian
+w kodzie: wystarczy, że plik istnieje.
 
 ## Sterowanie
 
@@ -72,9 +82,13 @@ Gra jest instalowalna i działa offline.
 
 ## Audio
 
-Wszystko wygenerowane przez ElevenLabs — 33 kwestie mówione (Maciek, lektor NFZ,
-ciocia Kasia), 11 efektów i 5 kawałków muzyki w stylu kosmicznego country
-(menu / gra / boss / koniec / wygrana).
+Wszystko wygenerowane przez ElevenLabs — 49 kwestii mówionych (Maciek, lektor
+NFZ, ciocia Kasia, roszczeniowe baby), 14 efektów i 5 kawałków muzyki w stylu
+kosmicznego country (menu / gra / boss / koniec / wygrana).
+
+Dźwięk silnika **nie** jest plikiem — to brązowy szum przez filtr
+dolnoprzepustowy plus dwa niskie oscylatory, składane w Web Audio. Pętla z mp3
+przy ciągłym dźwięku zawsze słyszalnie „klika".
 
 ```bash
 echo 'ELEVEN_LABS_API_KEY=...' > .env

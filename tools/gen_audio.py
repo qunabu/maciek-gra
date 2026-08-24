@@ -16,6 +16,7 @@ MODEL = 'eleven_multilingual_v2'
 MACIEK = 'pNInz6obpgDQGcFmaJgB'   # Adam
 URZAD  = 'ErXwobaYiN019PkySvjV'   # Antoni - lektor NFZ
 KASIA  = '21m00Tcm4TlvDq8ikWAM'   # Rachel - ciocia Kasia
+BABA   = 'FGY2WhTYpPnrIDTdsKH5'   # Laura - roszczeniowe baby
 
 
 def poslij(url, dane, plik, proby=3):
@@ -80,6 +81,9 @@ MACIEK_LINIE = {
     'm_kara':      'Dwadziescia piec procent. Za co?!',
     'm_wygrana':   'Pokonalem ciocie Kasie. Niemozliwe.',
     'm_low':       'Malo pierwszorazowych. Bedzie kontrola.',
+    'm_naprawa':   'Drukarka dziala. Cud.',
+    'm_toner':     'Toner! Teraz podwojny ogien.',
+    'm_zepsuta':   'No i rozwalilem. Trzeba bylo naprawic.',
 }
 
 # --- lektor NFZ -----------------------------------------------------------
@@ -92,6 +96,7 @@ URZAD_LINIE = {
     'u_koniec':    'Umowa rozwiazana. Do widzenia.',
     'u_ratio_ok':  'Wskaznik pierwszorazowych w normie.',
     'u_bonus':     'Premia za realizacje swiadczen.',
+    'u_naprawa':   'Sprzet naprawiony. Premia serwisowa.',
 }
 
 # --- ciocia Kasia (mega bos) ---------------------------------------------
@@ -106,6 +111,22 @@ KASIA_LINIE = {
     'k_wygrana':   'Wiedzialam, ze sobie nie poradzisz.',
 }
 
+# --- roszczeniowe baby -----------------------------------------------------
+BABY_LINIE = {
+    'b_spoznil':   'Panie Macku, znowu sie pan spoznil.',
+    'b_drukarka':  'Panie Macku, drukarka mi znowu nie dziala.',
+    'b_przycisk':  'Panie Macku, ten przycisk to troche za maly.',
+    'b_czekac':    'Panie Macku, a dlaczego ja mam czekac?',
+    'b_prywatnie': 'Panie Macku, ja mam prywatnie i tam od razu przyjmuja.',
+    'b_kolejka':   'Panie Macku, ja tylko na chwilke, bez kolejki.',
+    'b_internet':  'Panie Macku, a moj internet mowi cos innego.',
+    'b_skladki':   'Panie Macku, ja placę skladki od czterdziestu lat.',
+    'b_nawszystko':'Panie Macku, niech mi pan da cos na wszystko.',
+    'b_lekarz':    'Panie Macku, a czy pan w ogole jest lekarzem?',
+    'b_monitor':   'Panie Macku, ten monitor jakos dziwnie mruga.',
+    'b_stopa':     'Panie Macku, moja stopa tez jest wazna.',
+}
+
 EFEKTY = {
     'sfx_strzal':   ('retro sci-fi laser pew, short punchy synth zap, arcade shooter', 0.5),
     'sfx_bum':      ('arcade explosion, crunchy retro boom with debris, short', 0.9),
@@ -118,6 +139,10 @@ EFEKTY = {
     'sfx_hit':      ('short dull impact thud, player takes damage, arcade', 0.5),
     'sfx_smierc':   ('retro arcade game over descending tone with explosion', 1.5),
     'sfx_hiper':    ('sci-fi teleport whoosh, quick warp jump, short', 0.7),
+    'sfx_naprawa':  ('mechanical click then office printer powering up and feeding paper, '
+                     'satisfying success, short', 1.6),
+    'sfx_klucz':    ('quick metallic wrench ratchet clicks, tightening a bolt, short', 0.8),
+    'sfx_toner':    ('bright power-up shimmer, weapon upgrade, arcade, short', 1.0),
 }
 
 MUZYKA = {
@@ -149,6 +174,10 @@ def main():
         for k, t in URZAD_LINIE.items():
             wynik[k] = mowa(k + '.mp3', t, URZAD, styl=0.15, stab=0.7)
             print('%-14s %s  "%s"' % (k, wynik[k], t), flush=True)
+        print('=== ROSZCZENIOWE BABY ===', flush=True)
+        for k, t in BABY_LINIE.items():
+            wynik[k] = mowa(k + '.mp3', t, BABA, styl=0.65, stab=0.4)
+            print('%-14s %s  "%s"' % (k, wynik[k], t), flush=True)
         print('=== CIOCIA KASIA ===', flush=True)
         for k, t in KASIA_LINIE.items():
             wynik[k] = mowa(k + '.mp3', t, KASIA, styl=0.6)
@@ -171,6 +200,7 @@ def main():
         stary = json.load(open(mp)).get('wynik', {})
     stary.update(wynik)
     json.dump({'maciek': MACIEK_LINIE, 'urzad': URZAD_LINIE, 'kasia': KASIA_LINIE,
+               'baby': BABY_LINIE,
                'wynik': stary}, open(mp, 'w'), ensure_ascii=False, indent=1)
     print('\nGOTOWE. plików: %d, błędów: %d' % (len(wynik), len(bledy)), flush=True)
     if bledy:

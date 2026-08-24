@@ -67,6 +67,7 @@
   #prog{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--zolty);
     box-shadow:0 0 8px var(--zolty)}
   #kara{color:var(--czerw);font-weight:bold;animation:puls 1s infinite}
+  #tonerHud{color:var(--blekit);font-weight:bold;text-shadow:0 0 10px rgba(90,215,255,.8)}
   @keyframes puls{50%{opacity:.35}}
 
   #bossPasek{position:fixed;left:50%;transform:translateX(-50%);
@@ -141,6 +142,7 @@
     <div class="p" id="punkty">0</div>
     <div id="zycia">❤︎❤︎❤︎</div>
     <div id="kara" class="ukryty">KARA NFZ −25% · <span id="karaFale">3</span> fale</div>
+    <div id="tonerHud" class="ukryty">⚡ TONER 3000 · <span id="tonerSek">9</span>s</div>
   </div>
   <div class="kol" style="align-items:flex-end">
     <div class="p" id="fala">FALA 1</div>
@@ -174,6 +176,9 @@
     Żółci (kontynuacja) przylatują sami i psują ci wskaźnik.
     Spadnie poniżej progu na koniec fali → <b class="c">kontrola i −25% na trzy fale</b>.
     Nie twoja wina. Nikogo to nie obchodzi.<br><br>
+    Z rozwalonej drukarki zostaje złom z kluczem — <b>wleć w niego i przytrzymaj</b>,
+    żeby ją naprawić. W nagrodę <b>TONER 3000</b>: podwójny ogień. Strzelisz w nią
+    zamiast naprawić — zepsuta na amen.<br><br>
     Co piątą falę schodzi <b>MEGA BOS: CIOCIA KASIA</b>.
   </p>
   <div class="klawisze">
@@ -239,16 +244,19 @@ przeskaluj();
 /* ─────────────────────────  DŹWIĘK  ───────────────────────── */
 const A = (() => {
   const SFX = ['sfx_strzal','sfx_bum','sfx_drukarka','sfx_monitor','sfx_paragraf',
-               'sfx_pacjent','sfx_kara','sfx_boss','sfx_hit','sfx_smierc','sfx_hiper'];
+               'sfx_pacjent','sfx_kara','sfx_boss','sfx_hit','sfx_smierc','sfx_hiper',
+               'sfx_naprawa','sfx_klucz','sfx_toner'];
   const GLOS = ['m_start','m_strzal1','m_strzal2','m_strzal3','m_drukarka','m_monitor',
                 'm_paragraf','m_babcia','m_debil','m_pacjent','m_smierc','m_koniec','m_boss',
-                'm_zycie','m_kara','m_wygrana','m_low',
-                'u_fala','u_ostrzez','u_kara','u_kontrola','u_boss','u_koniec','u_ratio_ok','u_bonus',
-                'k_wejscie','k_atak1','k_atak2','k_atak3','k_atak4','k_trafiona','k_smierc','k_wygrana'];
+                'm_zycie','m_kara','m_wygrana','m_low','m_naprawa','m_toner','m_zepsuta',
+                'u_fala','u_ostrzez','u_kara','u_kontrola','u_boss','u_koniec','u_ratio_ok','u_bonus','u_naprawa',
+                'k_wejscie','k_atak1','k_atak2','k_atak3','k_atak4','k_trafiona','k_smierc','k_wygrana',
+                'b_spoznil','b_drukarka','b_przycisk','b_czekac','b_prywatnie','b_kolejka',
+                'b_internet','b_skladki','b_nawszystko','b_lekarz','b_monitor','b_stopa'];
   const MUZ = ['muz_menu','muz_gra','muz_boss','muz_koniec','muz_wygrana'];
 
   const pule = {}, glosy = {}, muzyki = {};
-  let wlaczony = true, teraz = null, mowi = null, mowiDo = 0;
+  let wlaczony = true, teraz = null, mowi = null, mowiDo = 0, odblokowane = false;
 
   function zrob(nazwa, ile, gl) {
     const t = [];
@@ -290,7 +298,7 @@ const A = (() => {
     } catch (e) {}
   }
   /* przygaszenie muzyki na czas kwestii */
-  let cel = .34, chwilowo = 1;
+  let cel = .42, chwilowo = 1;
   function pochyl(v) { chwilowo = v; }
   function muz(n) {
     if (teraz === n) return;
@@ -304,22 +312,111 @@ const A = (() => {
   setInterval(() => {
     const t = performance.now();
     if (mowi && t > mowiDo) { mowi = null; }
-    const docel = mowi ? .10 : cel;
+    const docel = mowi ? .12 : cel;
     chwilowo += (docel - chwilowo) * .18;
-    if (teraz && muzyki[teraz]) muzyki[teraz].volume = wlaczony ? ogranicz(chwilowo, 0, 1) : 0;
+    if (teraz && muzyki[teraz]) {
+      const a = muzyki[teraz];
+      a.volume = wlaczony ? ogranicz(chwilowo, 0, 1) : 0;
+      /* jeśli przeglądarka odrzuciła play() albo ktoś nas zapauzował — wracamy */
+      if (wlaczony && odblokowane && a.paused && !a.ended) a.play().catch(() => {});
+    }
   }, 60);
 
+  /* ── SILNIK ──────────────────────────────────────────────────────
+     Ciąg to dźwięk ciągły, więc pętla z mp3 zawsze słyszalnie „klika".
+     Robimy go w Web Audio: brązowy szum przez filtr dolnoprzepustowy
+     (dysza) + dwa niskie oscylatory (dudnienie). Wysokość i głośność
+     jadą za tym, czy Maciek dopala i jak szybko leci.                */
+  let ac = null, silnikGain = null, silnikFiltr = null, dudnienie = [], celSilnika = 0;
+
+  function zbudujSilnik() {
+    if (ac) return;
+    try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+
+    const dl = 2.2, bufor = ac.createBuffer(1, ac.sampleRate * dl, ac.sampleRate);
+    const d = bufor.getChannelData(0);
+    let ost = 0;
+    for (let i = 0; i < d.length; i++) {                 // brązowy szum
+      const bialy = Math.random() * 2 - 1;
+      ost = (ost + .022 * bialy) / 1.022;
+      d[i] = ost * 3.2;
+    }
+    /* zszycie końca z początkiem, żeby pętla nie strzelała */
+    const zszyj = Math.floor(ac.sampleRate * .03);
+    for (let i = 0; i < zszyj; i++) {
+      const w = i / zszyj;
+      d[i] = d[i] * w + d[d.length - zszyj + i] * (1 - w);
+    }
+
+    const zrodlo = ac.createBufferSource();
+    zrodlo.buffer = bufor; zrodlo.loop = true;
+
+    silnikFiltr = ac.createBiquadFilter();
+    silnikFiltr.type = 'lowpass';
+    silnikFiltr.frequency.value = 340;
+    silnikFiltr.Q.value = 5.5;
+
+    silnikGain = ac.createGain();
+    silnikGain.gain.value = 0;
+
+    zrodlo.connect(silnikFiltr).connect(silnikGain).connect(ac.destination);
+    zrodlo.start();
+
+    [46, 71].forEach((f, i) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = i ? 'triangle' : 'sine';
+      o.frequency.value = f;
+      g.gain.value = 0;
+      o.connect(g).connect(ac.destination);
+      o.start();
+      dudnienie.push({ o, g, f });
+    });
+  }
+
+  /* wołane z pętli gry: moc 0..1 */
+  function silnik(moc) {
+    celSilnika = wlaczony ? ogranicz(moc, 0, 1) : 0;
+    if (!ac) return;
+    if (ac.state === 'suspended') ac.resume().catch(() => {});
+    const t = ac.currentTime, m = celSilnika;
+    silnikGain.gain.setTargetAtTime(m * .17, t, .06);
+    silnikFiltr.frequency.setTargetAtTime(300 + m * 620, t, .08);
+    dudnienie.forEach((d, i) => {
+      d.g.gain.setTargetAtTime(m * (i ? .045 : .07), t, .08);
+      d.o.frequency.setTargetAtTime(d.f * (1 + m * .22), t, .1);
+    });
+  }
+
   return {
-    sfx, vo, muz,
+    sfx, vo, muz, silnik,
     get on() { return wlaczony; },
     przelacz() {
       wlaczony = !wlaczony;
-      if (!wlaczony) { Object.values(muzyki).forEach(a => a.pause()); }
+      if (!wlaczony) { Object.values(muzyki).forEach(a => a.pause()); silnik(0); }
       else if (teraz) { try { muzyki[teraz].play().catch(() => {}); } catch (e) {} }
       return wlaczony;
     },
-    odblokuj() {  /* wymuszenie autoplay po pierwszym kliknięciu */
-      Object.values(muzyki).forEach(a => { a.play().then(() => a.pause()).catch(() => {}); });
+    odblokuj() {
+      /* Odblokowanie autoplay po pierwszym gescie. Kluczowe: nie wolno
+         zapauzować utworu, który w międzyczasie wystartował — wcześniej
+         `play().then(pause)` gasiło muzykę gry sekundę po starcie. */
+      if (odblokowane) return;
+      odblokowane = true;
+      zbudujSilnik();
+      for (const n of Object.keys(muzyki)) {
+        const a = muzyki[n];
+        a.muted = true;
+        a.play().then(() => {
+          if (n !== teraz) { a.pause(); a.currentTime = 0; }
+          a.muted = false;
+        }).catch(() => { a.muted = false; });
+      }
+      for (const n of SFX) {
+        const a = pule[n].t[0];
+        a.muted = true;
+        a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; })
+                .catch(() => { a.muted = false; });
+      }
     }
   };
 })();
@@ -329,6 +426,17 @@ const maciekImg = new Image();
 let maciekOK = false;
 maciekImg.onload = () => maciekOK = true;
 maciekImg.src = 'maciek_ship.png';
+
+/* Roszczeniowe baby ze zdjęć. Pliki są w .gitignore — na publicznej wersji
+   ich nie ma i gra po cichu wraca do rysowanych wariantów. */
+const babyImg = [];
+['baba1_sprite.png', 'baba2_sprite.png', 'baba3_sprite.png'].forEach((plik, i) => {
+  const im = new Image();
+  im.onload = () => { babyImg[i] = im; };
+  im.onerror = () => {};
+  im.src = plik;
+});
+const LICZBA_BAB = 3;                        // tyle rysowanych wariantów zapasowych
 
 /* ─────────────────────────  GWIAZDY + HORYZONT  ───────────────────────── */
 let gwiazdy = [];
@@ -358,6 +466,21 @@ const TYPY = {
   kontrola: { nazwa: 'KONTROLA NFZ',   kolor: '#ff4d4d', pkt: 70, sfx: 'sfx_kara',
               vo: 'u_kontrola', waga: 1.0, predkosc: 1.6 }
 };
+const KWESTIE_BAB = [
+  ['b_spoznil',    'Panie Maćku, znowu się pan spóźnił.'],
+  ['b_drukarka',   'Panie Maćku, drukarka mi znowu nie działa.'],
+  ['b_przycisk',   'Panie Maćku, ten przycisk to trochę za mały.'],
+  ['b_czekac',     'Panie Maćku, a dlaczego ja mam czekać?'],
+  ['b_prywatnie',  'Panie Maćku, ja mam prywatnie i tam od razu przyjmują.'],
+  ['b_kolejka',    'Panie Maćku, ja tylko na chwilkę, bez kolejki.'],
+  ['b_internet',   'Panie Maćku, a mój internet mówi coś innego.'],
+  ['b_skladki',    'Panie Maćku, ja płacę składki od czterdziestu lat.'],
+  ['b_nawszystko', 'Panie Maćku, niech mi pan da coś na wszystko.'],
+  ['b_lekarz',     'Panie Maćku, a czy pan w ogóle jest lekarzem?'],
+  ['b_monitor',    'Panie Maćku, ten monitor jakoś dziwnie mruga.'],
+  ['b_stopa',      'Panie Maćku, moja stopa też jest ważna.']
+];
+
 const KLUCZE_TYPOW = Object.keys(TYPY);
 function losujTyp(fala) {
   const pula = [];
@@ -383,6 +506,7 @@ function nowaGra() {
     czas: 0, ostatniaKlatka: performance.now(),
     gracz: null,
     skaly: [], pociski: [], wrogPociski: [], pacjenci: [], czastki: [], teksty: [],
+    naprawy: [], toner: 0, gadanieCd: 2.5,
     boss: null,
     przerwa: 0,            // odliczanie do kolejnej fali
     nietykalnosc: 0,
@@ -396,8 +520,8 @@ function nowaGra() {
 }
 
 function nowyGracz() {
-  return { x: W / 2, y: H / 2, vx: 0, vy: 0, kat: -Math.PI / 2, r: 25,
-           ciag: false, cooldown: 0, hiperCooldown: 0, zywy: true };
+  return { x: W / 2, y: H / 2, vx: 0, vy: 0, kat: -Math.PI / 2, r: 44,
+           ciag: false, cooldown: 0, hiperCooldown: 0, odrzut: 0, zywy: true };
 }
 
 /* ─────────────────────────  ENCJE  ───────────────────────── */
@@ -425,7 +549,10 @@ function nowaSkala(typ, rozmiar, x, y, fala) {
     y: y !== undefined ? y : bezpiecznyY(),
     vx: Math.cos(kat) * predkosc * 60,
     vy: Math.sin(kat) * predkosc * 60,
-    obrot: los(0, TAU), obrotV: los(-1.4, 1.4),
+    obrot: los(0, TAU),
+    obrotV: typ === 'babcia' ? los(-.22, .22) : los(-1.4, 1.4),
+    wariant: losInt(0, LICZBA_BAB - 1),
+    dymek: null, dymekT: 0,
     hp: rozmiar === 3 ? 2 : 1,
     blysk: 0,
     ziarno: los(0, 100)
@@ -450,6 +577,11 @@ function nowyPacjent(rodzaj) {
   };
 }
 
+function nowaNaprawa(x, y) {
+  return { x, y, r: 21, vx: los(-16, 16), vy: los(-16, 16),
+           postep: 0, zycie: 15, faza: los(0, TAU), klucz: 0 };
+}
+
 function czastki(x, y, ile, kolor, sila) {
   for (let i = 0; i < ile; i++) {
     const k = los(0, TAU), v = los(.25, 1) * (sila || 170);
@@ -468,7 +600,7 @@ function startFali() {
   G.zabiciWFali = 0;
   const bossowa = G.fala % 5 === 0;
   G.skaly.length = 0; G.wrogPociski.length = 0;
-  G.pociski.length = 0;
+  G.pociski.length = 0; G.naprawy.length = 0;
 
   if (bossowa) {
     G.boss = nowyBoss(G.fala);
@@ -544,6 +676,8 @@ function ustawHUD() {
   w.style.background = r >= PROG ? 'var(--zielony)' : r >= PROG * .6 ? 'var(--zolty)' : 'var(--czerw)';
   $('#prog').style.left = (PROG * 100) + '%';
   $('#kara').classList.toggle('ukryty', G.karaFale <= 0);
+  $('#tonerHud').classList.toggle('ukryty', G.toner <= 0);
+  $('#tonerSek').textContent = Math.ceil(G.toner);
   $('#karaFale').textContent = G.karaFale;
   if (G.boss) $('#bossWyp').style.width = Math.max(0, G.boss.hp / G.boss.maxHp * 100) + '%';
 }
@@ -599,12 +733,21 @@ function blisko(a, b, dodatek) {
 function strzel() {
   const g = G.gracz;
   if (g.cooldown > 0 || !g.zywy) return;
-  g.cooldown = .17;
-  G.strzaly++;
+  g.cooldown = G.toner > 0 ? .12 : .17;
+  G.strzaly += G.toner > 0 ? 2 : 1;
+  g.odrzut = 1;
   const nx = Math.cos(g.kat), ny = Math.sin(g.kat);
-  G.pociski.push({ x: g.x + nx * (g.r + 6), y: g.y + ny * (g.r + 6),
-                   vx: nx * 560 + g.vx * .35, vy: ny * 560 + g.vy * .35,
-                   kat: g.kat, zycie: 1.05, r: 6 });
+  const rx = -ny, ry = nx;                       /* „w prawo" od dziobu */
+  const wylot = DL_DZIALA(g) - g.r * .52;        /* gdzie kończy się lufa */
+  const bx = g.x + nx * wylot + rx * g.r * .34;
+  const by = g.y + ny * wylot + ry * g.r * .34;
+  /* z tonerem lufa pluje dwoma naraz */
+  const rozstaw = G.toner > 0 ? [-9, 9] : [0];
+  for (const d of rozstaw) {
+    G.pociski.push({ x: bx + rx * d, y: by + ry * d,
+                     vx: nx * 560 + g.vx * .35, vy: ny * 560 + g.vy * .35,
+                     kat: g.kat, zycie: 1.05, r: 10 });
+  }
   g.vx -= nx * 12; g.vy -= ny * 12;
   A.sfx('sfx_strzal', .32);
   if (Math.random() < .045) A.vo(wybierz(['m_strzal1', 'm_strzal2', 'm_strzal3']), 1);
@@ -652,6 +795,11 @@ function rozbij(s, i) {
   if (s.rozmiar === 1 && Math.random() < .22) G.pacjenci.push(Object.assign(nowyPacjent('pierwszy'), {
     x: s.x, y: s.y, vx: los(-30, 30), vy: los(-30, 30), zycie: 9
   }));
+  /* z rozbitej drukarki zostaje kupa złomu — da się to jeszcze naprawić */
+  if (s.typ === 'drukarka' && s.rozmiar === 1 && G.naprawy.length < 3 && Math.random() < .6) {
+    G.naprawy.push(nowaNaprawa(s.x, s.y));
+    tekstLatajacy(s.x, s.y - 22, 'DO NAPRAWY!', '#5ad7ff');
+  }
 }
 
 function obrywa() {
@@ -747,7 +895,7 @@ function bossAktualizuj(dt) {
     A.vo(kw[0], 2); dymek('CIOCIA KASIA', kw[1], 3000);
   }
   /* kolizja z graczem */
-  if (g.zywy && blisko(b, g, -10)) obrywa();
+  if (g.zywy && blisko(b, g, -26)) obrywa();
 }
 
 function pociskKasi(x, y, kat, v) {
@@ -783,6 +931,7 @@ function bossOberwal(dmg) {
 /* ─────────────────────────  PĘTLA  ───────────────────────── */
 function aktualizuj(dt) {
   const g = G.gracz;
+  if (!g.zywy) A.silnik(0);
   G.czas += dt;
   G.trzask = Math.max(0, G.trzask - dt * 1.8);
   G.nietykalnosc = Math.max(0, G.nietykalnosc - dt);
@@ -802,12 +951,16 @@ function aktualizuj(dt) {
                          zycie: .35, max: .35, kolor: Math.random() < .5 ? '#ffd23f' : '#ff7a3e', r: los(1.5, 3.2) });
       }
     }
-    const v = Math.hypot(g.vx, g.vy), max = 480;
+    /* dźwięk silnika: baza od ciągu + trochę od realnej prędkości */
+    const szybkosc = Math.hypot(g.vx, g.vy);
+    A.silnik((g.ciag ? .62 : 0) + Math.min(szybkosc / 480, 1) * .38);
+    const v = szybkosc, max = 480;
     if (v > max) { g.vx = g.vx / v * max; g.vy = g.vy / v * max; }
     g.vx *= Math.pow(.55, dt); g.vy *= Math.pow(.55, dt);
     g.x += g.vx * dt; g.y += g.vy * dt;
     zawin(g);
     g.cooldown -= dt; g.hiperCooldown -= dt;
+    g.odrzut = Math.max(0, g.odrzut - dt * 5);
     if (K.ogien) strzel();
     if (K.hiper) { hiperskok(); K.hiper = false; }
   }
@@ -831,6 +984,20 @@ function aktualizuj(dt) {
       }
     }
     if (trafil) continue;
+    for (let j = G.naprawy.length - 1; j >= 0; j--) {
+      const n = G.naprawy[j];
+      if (blisko(p, n)) {
+        G.pociski.splice(i, 1);
+        G.naprawy.splice(j, 1);
+        czastki(n.x, n.y, 18, '#8fa0b5', 160);
+        tekstLatajacy(n.x, n.y, 'ZEPSUTA NA AMEN', '#ff4d4d');
+        A.sfx('sfx_drukarka', .5);
+        A.vo('m_zepsuta', 2);
+        trafil = true;
+        break;
+      }
+    }
+    if (trafil) continue;
     if (G.boss && blisko(p, G.boss, -12)) {
       G.trafienia++;
       G.pociski.splice(i, 1);
@@ -844,7 +1011,7 @@ function aktualizuj(dt) {
     p.x += p.vx * dt; p.y += p.vy * dt; p.zycie -= dt; p.obrot += p.obrotV * dt;
     zawin(p, 14);
     if (p.zycie <= 0) { G.wrogPociski.splice(i, 1); continue; }
-    if (g.zywy && G.nietykalnosc <= 0 && blisko(p, g, -4)) {
+    if (g.zywy && G.nietykalnosc <= 0 && blisko(p, g, -17)) {
       G.wrogPociski.splice(i, 1);
       obrywa();
     }
@@ -863,7 +1030,7 @@ function aktualizuj(dt) {
       if (v > 165) { s.vx = s.vx / v * 165; s.vy = s.vy / v * 165; }
     }
     zawin(s);
-    if (g.zywy && G.nietykalnosc <= 0 && blisko(s, g, -6)) obrywa();
+    if (g.zywy && G.nietykalnosc <= 0 && blisko(s, g, -19)) obrywa();
   }
 
   /* --- pacjenci --- */
@@ -890,7 +1057,7 @@ function aktualizuj(dt) {
       G.pacjenci.splice(i, 1);
       continue;
     }
-    if (g.zywy && blisko(p, g, 6)) {
+    if (g.zywy && blisko(p, g, -11)) {
       G.pacjenci.splice(i, 1);
       if (p.rodzaj === 'pierwszy') {
         G.pierwszorazowi++;
@@ -917,6 +1084,61 @@ function aktualizuj(dt) {
     A.vo('u_ostrzez', 3);
     setTimeout(() => A.vo('m_low', 2), 3200);
     dymek('NFZ', 'Zbyt niski przyrost pacjentów pierwszorazowych.', 3400);
+  }
+
+  /* --- roszczeniowe baby mają coś do powiedzenia --- */
+  G.gadanieCd -= dt;
+  for (const b of G.skaly) if (b.dymekT > 0) b.dymekT -= dt;
+  if (G.gadanieCd <= 0) {
+    const baby = G.skaly.filter(b => b.typ === 'babcia' && b.dymekT <= 0);
+    if (baby.length) {
+      const b = wybierz(baby);
+      const kw = wybierz(KWESTIE_BAB);
+      b.dymek = kw[1]; b.dymekT = 3.8;
+      A.vo(kw[0], 2);
+      G.gadanieCd = los(4.5, 8);
+    } else {
+      G.gadanieCd = 1.2;
+    }
+  }
+
+  /* --- drukarki do naprawy --- */
+  const tonerPrzed = Math.ceil(G.toner);
+  G.toner = Math.max(0, G.toner - dt);
+  if (Math.ceil(G.toner) !== tonerPrzed) ustawHUD();
+  for (let i = G.naprawy.length - 1; i >= 0; i--) {
+    const n = G.naprawy[i];
+    n.x += n.vx * dt; n.y += n.vy * dt; n.zycie -= dt; n.faza += dt * 2.4;
+    zawin(n, 30);
+    if (n.zycie <= 0) {
+      czastki(n.x, n.y, 8, '#5ad7ff', 90);
+      tekstLatajacy(n.x, n.y, 'ODPŁYNĘŁA', '#7f8ba0');
+      G.naprawy.splice(i, 1);
+      continue;
+    }
+    /* naprawa przez dotyk — trzeba przy niej chwilę posiedzieć */
+    if (g.zywy && blisko(n, g, -12)) {
+      n.postep += dt / 1.15;
+      n.klucz -= dt;
+      if (n.klucz <= 0) { n.klucz = .26; A.sfx('sfx_klucz', .3); }
+      czastki(n.x + los(-14, 14), n.y + los(-14, 14), 1, '#5ad7ff', 60);
+      if (n.postep >= 1) {
+        G.naprawy.splice(i, 1);
+        const premia = 220 + G.fala * 25;
+        dodajPunkty(premia);
+        G.toner = 9;
+        czastki(n.x, n.y, 26, '#43ffa1', 180);
+        czastki(n.x, n.y, 18, '#5ad7ff', 140);
+        tekstLatajacy(n.x, n.y, 'NAPRAWIONA +' + premia, '#43ffa1');
+        A.sfx('sfx_naprawa', .6);
+        setTimeout(() => A.sfx('sfx_toner', .5), 420);
+        A.vo('m_naprawa', 3);
+        setTimeout(() => A.vo(Math.random() < .5 ? 'm_toner' : 'u_naprawa', 2), 2200);
+        komunikat('DRUKARKA DZIAŁA', 'TONER 3000 · podwójny ogień na 9 s', 2400);
+      }
+    } else {
+      n.postep = Math.max(0, n.postep - dt * .45);   // puszczone — wraca
+    }
   }
 
   /* --- cząstki i teksty --- */
@@ -990,6 +1212,8 @@ function tlo(t) {
   ctx.restore();
 }
 
+const DL_DZIALA = g => g.r * 1.5;
+
 /* — gracz — */
 function rysujGracza() {
   const g = G.gracz;
@@ -1032,40 +1256,82 @@ function rysujGracza() {
     ctx.closePath();
     ctx.fillStyle = '#5ad7ff'; ctx.fill();
   }
-  /* kapelusz kowbojski — kosmiczne country */
+  /* KUTAS 3000 — działo pokładowe, trzymane od biodra */
   ctx.save();
-  ctx.translate(0, -g.r * 1.24);
-  ctx.fillStyle = '#6b3f22';
-  ctx.beginPath(); ctx.ellipse(0, 2, g.r * .95, g.r * .21, 0, 0, TAU); ctx.fill();
+  const o = g.odrzut || 0;
+  ctx.translate(g.r * .34, g.r * .52 + o * 5);
+  ctx.rotate(-.1);
+  const dl = DL_DZIALA(g) * (1 + o * .07);
+  const pr = g.r * .215;
+  ctx.shadowColor = '#ff3ea5'; ctx.shadowBlur = 12 + o * 26;
+
+  /* nasada */
+  ctx.fillStyle = '#dd66a4';
+  ctx.beginPath(); ctx.arc(-pr * .88, pr * .1, pr * .82, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(pr * .88, pr * .22, pr * .82, 0, TAU); ctx.fill();
+
+  /* trzon */
+  const gr = ctx.createLinearGradient(-pr, 0, pr, 0);
+  gr.addColorStop(0, '#dd7fb2'); gr.addColorStop(.4, '#ffc9e4'); gr.addColorStop(1, '#d972a9'.replace('a9', 'a9'));
+  ctx.fillStyle = gr;
   ctx.beginPath();
-  ctx.moveTo(-g.r * .42, 1);
-  ctx.quadraticCurveTo(-g.r * .34, -g.r * .55, 0, -g.r * .52);
-  ctx.quadraticCurveTo(g.r * .34, -g.r * .55, g.r * .42, 1);
+  ctx.moveTo(-pr, pr * .3);
+  ctx.quadraticCurveTo(-pr * 1.08, -dl * .55, -pr * .9, -dl + pr);
+  ctx.lineTo(pr * .9, -dl + pr);
+  ctx.quadraticCurveTo(pr * 1.08, -dl * .55, pr, pr * .3);
   ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#43ffa1';
-  ctx.fillRect(-g.r * .42, -g.r * .06, g.r * .84, g.r * .12);
+
+  /* żołądź — wylot lufy */
+  ctx.fillStyle = '#ff5fb4';
+  ctx.beginPath(); ctx.arc(0, -dl + pr * .85, pr * 1.14, 0, TAU); ctx.fill();
+
+  /* rozgrzany wylot po strzale */
+  if (o > .02) {
+    ctx.fillStyle = 'rgba(255,248,210,' + (o * .8) + ')';
+    ctx.beginPath(); ctx.arc(0, -dl + pr * .85, pr * (1.25 + o * 1.1), 0, TAU); ctx.fill();
+  }
+  /* błysk na trzonie */
+  ctx.fillStyle = 'rgba(255,255,255,.28)';
+  ctx.beginPath();
+  ctx.ellipse(-pr * .32, -dl * .5, pr * .2, dl * .3, 0, 0, TAU); ctx.fill();
+
+  ctx.shadowBlur = 0;
   ctx.restore();
   ctx.restore();
 }
 
-/* — pocisk: Kutas 3000 — */
+/* — pocisk: KUTAS 3000 — */
 function rysujPocisk(p) {
   ctx.save();
   ctx.translate(p.x, p.y);
   ctx.rotate(p.kat);
-  ctx.shadowColor = '#ff3ea5'; ctx.shadowBlur = 16;
-  ctx.fillStyle = '#ff8ecb';
+  ctx.shadowColor = '#ff3ea5'; ctx.shadowBlur = 20;
+
+  /* nasada */
+  ctx.fillStyle = '#f07ab5';
+  ctx.beginPath(); ctx.arc(-14, -7, 7, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(-14, 7, 7, 0, TAU); ctx.fill();
+
+  /* trzon */
+  ctx.fillStyle = '#ffb0da';
   ctx.beginPath();
-  ctx.moveTo(14, 0);
-  ctx.quadraticCurveTo(10, -6, 0, -5.5);
-  ctx.lineTo(-11, -5);
-  ctx.quadraticCurveTo(-16, 0, -11, 5);
-  ctx.lineTo(0, 5.5);
-  ctx.quadraticCurveTo(10, 6, 14, 0);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = '#ffd7ec';
-  ctx.beginPath(); ctx.arc(11, 0, 4.2, 0, TAU); ctx.fill();
+  ctx.moveTo(-13, -7.6);
+  ctx.quadraticCurveTo(0, -8.6, 9, -8);
+  ctx.lineTo(9, 8);
+  ctx.quadraticCurveTo(0, 8.6, -13, 7.6);
+  ctx.closePath(); ctx.fill();
+
+  /* żołądź */
+  ctx.fillStyle = '#ff6fbe';
+  ctx.beginPath(); ctx.arc(11, 0, 9.2, 0, TAU); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(8, -8.8); ctx.lineTo(11, -8.8); ctx.lineTo(11, 8.8); ctx.lineTo(8, 8.8);
+  ctx.closePath(); ctx.fill();
+
+  /* błysk */
+  ctx.fillStyle = 'rgba(255,255,255,.42)';
+  ctx.beginPath(); ctx.ellipse(-2, -4.2, 8, 2.1, -.08, 0, TAU); ctx.fill();
+
   ctx.shadowBlur = 0;
   ctx.restore();
 }
@@ -1074,7 +1340,9 @@ function rysujPocisk(p) {
 function rysujSkale(s) {
   ctx.save();
   ctx.translate(s.x, s.y);
-  ctx.rotate(s.obrot);
+  /* baby to twarze — kręcenie nimi jak kamieniem wygląda źle, więc się
+     tylko kołyszą; reszta problemów wiruje normalnie */
+  ctx.rotate(s.typ === 'babcia' ? Math.sin(G.czas * 1.6 + s.ziarno) * .13 : s.obrot);
   const r = s.r;
   if (s.blysk > 0) { ctx.shadowColor = '#fff'; ctx.shadowBlur = 22 * s.blysk; }
 
@@ -1127,8 +1395,32 @@ function rysujSkale(s) {
     ctx.fillText(':(', 0, r * .08);
     ctx.fillStyle = '#333b48'; ctx.fillRect(-r * .2, r * .56, r * .4, r * .2);
   } else if (s.typ === 'babcia') {
+    const foto = babyImg[s.wariant];
+    if (foto) {
+      /* wersja lokalna: prawdziwe zdjęcie w kółku */
+      const d = r * 2.05;
+      ctx.save();
+      ctx.beginPath(); ctx.arc(0, 0, r * .92, 0, TAU);
+      ctx.fillStyle = 'rgba(224,69,123,.9)'; ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 0, r * .84, 0, TAU); ctx.clip();
+      const w = d * (foto.width / foto.height), h = d;
+      ctx.drawImage(foto, -w / 2, -h * .46, w, h);
+      ctx.restore();
+      ctx.strokeStyle = '#ff8ec2'; ctx.lineWidth = Math.max(2, r * .07);
+      ctx.beginPath(); ctx.arc(0, 0, r * .88, 0, TAU); ctx.stroke();
+      ctx.restore();
+      rysujPodpisSkaly(s);
+      rysujDymekBaby(s);
+      return;
+    }
+    /* wersja publiczna: rysowana baba w jednym z trzech wariantów */
+    const PAL = [
+      { chustka: '#e0457b', obwod: 'rgba(150,30,70,.35)', brwi: '#5a4436' },
+      { chustka: '#d8a531', obwod: 'rgba(140,95,20,.35)', brwi: '#8a6a2a' },
+      { chustka: '#8e93a8', obwod: 'rgba(70,74,90,.35)',  brwi: '#5d6270' }
+    ][s.wariant % 3];
     /* chustka jako pierścień dookoła twarzy + wściekła mina */
-    ctx.fillStyle = '#e0457b';
+    ctx.fillStyle = PAL.chustka;
     ctx.beginPath(); ctx.arc(0, 0, r * .84, 0, TAU); ctx.fill();
     /* węzeł pod brodą — jeszcze na chustce */
     ctx.beginPath();
@@ -1140,10 +1432,10 @@ function rysujSkale(s) {
     ctx.fillStyle = '#ffe0cc';
     ctx.beginPath(); ctx.arc(0, r * .13, r * .6, 0, TAU); ctx.fill();
     /* cień pod brzegiem chustki */
-    ctx.strokeStyle = 'rgba(150,30,70,.35)'; ctx.lineWidth = Math.max(1.5, r * .07);
+    ctx.strokeStyle = PAL.obwod; ctx.lineWidth = Math.max(1.5, r * .07);
     ctx.beginPath(); ctx.arc(0, r * .13, r * .57, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
     /* brwi na kwintę */
-    ctx.strokeStyle = '#5a4436'; ctx.lineWidth = Math.max(1.6, r * .07);
+    ctx.strokeStyle = PAL.brwi; ctx.lineWidth = Math.max(1.6, r * .07);
     ctx.beginPath();
     ctx.moveTo(-r * .42, -r * .16); ctx.lineTo(-r * .1, -r * .02);
     ctx.moveTo(r * .42, -r * .16); ctx.lineTo(r * .1, -r * .02);
@@ -1185,16 +1477,80 @@ function rysujSkale(s) {
   }
   ctx.restore();
 
-  /* podpis przy dużych */
-  if (s.rozmiar === 3) {
-    ctx.save();
-    ctx.globalAlpha = .5;
-    ctx.fillStyle = K;
-    ctx.font = '10px "Courier New",monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(TYPY[s.typ].nazwa, s.x, s.y + s.r + 15);
-    ctx.restore();
+  rysujPodpisSkaly(s);
+  if (s.typ === 'babcia') rysujDymekBaby(s);
+}
+
+function rysujPodpisSkaly(s) {
+  if (s.rozmiar !== 3) return;
+  ctx.save();
+  ctx.globalAlpha = .5;
+  ctx.fillStyle = TYPY[s.typ].kolor;
+  ctx.font = '10px "Courier New",monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(TYPY[s.typ].nazwa, s.x, s.y + s.r + 15);
+  ctx.restore();
+}
+
+/* dymek z pretensją nad babą — zawijany, zawsze na wierzchu i poziomo */
+function rysujDymekBaby(s) {
+  if (!s.dymek || s.dymekT <= 0) return;
+  const a = Math.min(1, s.dymekT / .4) * Math.min(1, (3.8 - s.dymekT) / .25 + .2);
+  ctx.save();
+  ctx.globalAlpha = ogranicz(a, 0, 1);
+  ctx.font = '12px "Courier New",monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+
+  const maxSzer = 210;
+  const slowa = s.dymek.split(' ');
+  const linie = [];
+  let biez = '';
+  for (const w of slowa) {
+    const test = biez ? biez + ' ' + w : w;
+    if (ctx.measureText(test).width > maxSzer && biez) { linie.push(biez); biez = w; }
+    else biez = test;
   }
+  if (biez) linie.push(biez);
+
+  const wys = linie.length * 15 + 14;
+  const szer = Math.min(maxSzer, Math.max(...linie.map(l => ctx.measureText(l).width))) + 18;
+  let x = s.x - szer / 2, y = s.y - s.r - wys - 14;
+  x = ogranicz(x, 8, W - szer - 8);
+  y = Math.max(8, y);
+
+  /* chmurka */
+  ctx.fillStyle = 'rgba(14,10,26,.92)';
+  ctx.strokeStyle = '#ffb3d1'; ctx.lineWidth = 1.5;
+  const rr = 9;
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.lineTo(x + szer - rr, y);
+  ctx.quadraticCurveTo(x + szer, y, x + szer, y + rr);
+  ctx.lineTo(x + szer, y + wys - rr);
+  ctx.quadraticCurveTo(x + szer, y + wys, x + szer - rr, y + wys);
+  ctx.lineTo(x + rr, y + wys);
+  ctx.quadraticCurveTo(x, y + wys, x, y + wys - rr);
+  ctx.lineTo(x, y + rr);
+  ctx.quadraticCurveTo(x, y, x + rr, y);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  /* ogonek w stronę baby */
+  const ox = ogranicz(s.x, x + 16, x + szer - 16);
+  ctx.beginPath();
+  ctx.moveTo(ox - 7, y + wys - 1);
+  ctx.lineTo(ox + 7, y + wys - 1);
+  ctx.lineTo(ox + 1, y + wys + 11);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(14,10,26,.92)'; ctx.fill();
+  ctx.strokeStyle = '#ffb3d1';
+  ctx.beginPath(); ctx.moveTo(ox - 7, y + wys); ctx.lineTo(ox + 1, y + wys + 11);
+  ctx.lineTo(ox + 7, y + wys); ctx.stroke();
+
+  ctx.fillStyle = '#ffd9e8';
+  linie.forEach((l, i) => ctx.fillText(l, x + 9, y + 8 + i * 15));
+  ctx.restore();
 }
 
 /* — pacjenci — */
@@ -1232,6 +1588,60 @@ function rysujPacjenta(p) {
   ctx.font = 'bold 9px "Courier New",monospace';
   ctx.textAlign = 'center';
   ctx.fillText(pierwszy ? 'PIERWSZORAZOWY' : 'kontynuacja', p.x, p.y + p.r + 16);
+  ctx.restore();
+}
+
+/* — drukarka do naprawy — */
+function rysujNaprawe(n) {
+  const puls = .55 + .45 * Math.sin(n.faza);
+  const gasnie = n.zycie < 4 ? (.35 + .65 * Math.abs(Math.sin(n.zycie * 7))) : 1;
+  const r = n.r;
+  ctx.save();
+  ctx.translate(n.x, n.y);
+  ctx.globalAlpha = gasnie;
+
+  /* aura „da się z tym coś zrobić" */
+  const aura = ctx.createRadialGradient(0, 0, r * .4, 0, 0, r * 1.9);
+  aura.addColorStop(0, 'rgba(90,215,255,' + (.30 * puls) + ')');
+  aura.addColorStop(1, 'rgba(90,215,255,0)');
+  ctx.fillStyle = aura;
+  ctx.beginPath(); ctx.arc(0, 0, r * 1.9, 0, TAU); ctx.fill();
+
+  /* korpus */
+  ctx.fillStyle = '#8fa0b5'; ctx.strokeStyle = '#5ad7ff'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.rect(-r * .8, -r * .35, r * 1.6, r * .9); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#43506b'; ctx.fillRect(-r * .5, -r * .16, r * 1.0, r * .16);
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#c4ccd8'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.rect(-r * .34, -r * .95, r * .68, r * .62); ctx.fill(); ctx.stroke();
+
+  /* klucz płaski zamiast czerwonej lampki */
+  ctx.save();
+  ctx.translate(r * .52, r * .06);
+  ctx.rotate(-.5 + Math.sin(n.faza * 2.2) * .35);
+  ctx.strokeStyle = '#e8eef7'; ctx.lineWidth = Math.max(2, r * .12);
+  ctx.beginPath(); ctx.moveTo(0, r * .3); ctx.lineTo(0, -r * .22); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, -r * .3, r * .16, Math.PI * .25, Math.PI * .75, true); ctx.stroke();
+  ctx.restore();
+
+  /* pierścień postępu naprawy */
+  if (n.postep > 0) {
+    ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(0, 0, r * 1.35, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = '#43ffa1'; ctx.lineWidth = 4;
+    ctx.shadowColor = '#43ffa1'; ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.35, -Math.PI / 2, -Math.PI / 2 + n.postep * TAU);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = .85 * gasnie;
+  ctx.fillStyle = '#5ad7ff';
+  ctx.font = 'bold 10px "Courier New",monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(n.postep > 0 ? 'NAPRAWIAM…' : 'WLEĆ = NAPRAW', n.x, n.y + n.r + 24);
   ctx.restore();
 }
 
@@ -1348,6 +1758,7 @@ function rysuj(t) {
   tlo(t);
   if (G) {
     for (const p of G.pacjenci) rysujPacjenta(p);
+    for (const n of G.naprawy) rysujNaprawe(n);
     for (const s of G.skaly) rysujSkale(s);
     if (G.boss) rysujBossa();
     for (const p of G.wrogPociski) rysujPociskKasi(p);
@@ -1404,12 +1815,13 @@ function start() {
 }
 
 function pauza() {
-  if (G.stan === 'gra') { G.stan = 'pauza'; $('#ekranPauza').classList.remove('ukryty'); }
+  if (G.stan === 'gra') { G.stan = 'pauza'; A.silnik(0); $('#ekranPauza').classList.remove('ukryty'); }
   else { G.stan = 'gra'; ostatni = performance.now(); $('#ekranPauza').classList.add('ukryty'); }
 }
 
 function koniecGry() {
   G.stan = 'koniec';
+  A.silnik(0);
   A.muz('muz_koniec');
   A.vo('u_koniec', 5);
   setTimeout(() => A.vo('m_koniec', 5), 3600);

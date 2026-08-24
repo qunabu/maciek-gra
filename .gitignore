@@ -9,6 +9,14 @@ tools/gen_ikony
 # źródłowe zdjęcia (ciężkie, do repo idzie tylko wycięty maciek_ship.png)
 maciek.jpg
 maciek_head.png
+
+# Roszczeniowe baby: zrzuty z social mediów z rozpoznawalnymi, prywatnymi
+# osobami. Zostają wyłącznie lokalnie — publiczna wersja gry ma w tym miejscu
+# rysowane warianty (patrz babyImg w index.html).
+baba*.jpg
+baba*.jpeg
+baba*_cut.png
+baba*_sprite.png
 Bociuś*.jpg
 *.zip
 

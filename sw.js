@@ -10,7 +10,7 @@
    • nowy worker NIE wchodzi na siłę — strona pyta gracza „nowa wersja,
      odświeżyć?" i dopiero wtedy woła skipWaiting.                           */
 
-const WERSJA = '1.0.3';
+const WERSJA = '1.4.0';
 const CACHE  = 'maciek-nfz-' + WERSJA;
 
 /* to, co musi być dostępne offline od pierwszego uruchomienia */
@@ -30,11 +30,14 @@ const SZKIELET = [
 const AUDIO = [
   'sfx_strzal','sfx_bum','sfx_drukarka','sfx_monitor','sfx_paragraf','sfx_pacjent',
   'sfx_kara','sfx_boss','sfx_hit','sfx_smierc','sfx_hiper',
+  'sfx_naprawa','sfx_klucz','sfx_toner',
   'm_start','m_strzal1','m_strzal2','m_strzal3','m_drukarka','m_monitor','m_paragraf',
   'm_babcia','m_debil','m_pacjent','m_smierc','m_koniec','m_boss','m_zycie','m_kara',
-  'm_wygrana','m_low',
-  'u_fala','u_ostrzez','u_kara','u_kontrola','u_boss','u_koniec','u_ratio_ok','u_bonus',
+  'm_wygrana','m_low','m_naprawa','m_toner','m_zepsuta',
+  'u_fala','u_ostrzez','u_kara','u_kontrola','u_boss','u_koniec','u_ratio_ok','u_bonus','u_naprawa',
   'k_wejscie','k_atak1','k_atak2','k_atak3','k_atak4','k_trafiona','k_smierc','k_wygrana',
+  'b_spoznil','b_drukarka','b_przycisk','b_czekac','b_prywatnie','b_kolejka',
+  'b_internet','b_skladki','b_nawszystko','b_lekarz','b_monitor','b_stopa',
   'muz_menu','muz_gra','muz_boss','muz_koniec','muz_wygrana'
 ].map(n => './audio/' + n + '.mp3');
 
@@ -52,16 +55,23 @@ self.addEventListener('activate', e => {
     await Promise.all(nazwy.filter(n => n !== CACHE).map(n => caches.delete(n)));
     if (self.registration.navigationPreload) await self.registration.navigationPreload.enable();
     await self.clients.claim();
-    // audio w tle, po kawałku, żeby nie zapchać łącza
-    const c = await caches.open(CACHE);
-    for (const u of AUDIO) {
-      if (await c.match(u)) continue;
-      await c.add(new Request(u, { cache: 'reload' })).catch(() => {});
-    }
-    const klienci = await self.clients.matchAll();
-    klienci.forEach(k => k.postMessage({ typ: 'offline-gotowe', wersja: WERSJA }));
   })());
+  /* audio dociągamy POZA waitUntil — w środku nowy worker wisiałby w stanie
+     „activating" przez ~50 pobrań i podmiana wersji trwałaby wieki. Jeśli
+     przeglądarka uśpi workera w połowie, pętla dokończy się przy następnym
+     wejściu: pliki, które już są w cache, są pomijane. */
+  dociagnijAudio();
 });
+
+async function dociagnijAudio() {
+  const c = await caches.open(CACHE);
+  for (const u of AUDIO) {
+    if (await c.match(u)) continue;
+    await c.add(new Request(u, { cache: 'reload' })).catch(() => {});
+  }
+  const klienci = await self.clients.matchAll();
+  klienci.forEach(k => k.postMessage({ typ: 'offline-gotowe', wersja: WERSJA }));
+}
 
 self.addEventListener('message', e => {
   if (e.data === 'wskakuj') self.skipWaiting();
